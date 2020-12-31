@@ -135,7 +135,7 @@ cd $HADOOP_HOME/bin
 
 启动HDFS：
 		第一次执行的时候一定要格式化文件系统，不要重复执行: hdfs namenode -format
-		启动集群：$HADOOP_HOME/sbin/start-dfs.sh
+		启动集群：$HADOOP_HOME/sbin/start-dfs.sh   (这里记得先改好主机名映射为wxk000)
 		验证:
 			[hadoop@hadoop000 sbin]$ jps
 			60002 DataNode
@@ -228,6 +228,8 @@ HDFS存储扩展：
 启动yarn：
 $HADOOP_HOME/sbin/start-yarn.sh
 
+http://wxk000:8088
+
 
 spark
 cd ~/source
@@ -288,7 +290,6 @@ Represents an
 3）存储+计算 :   HDFS/S3+MapReduce/Spark
 	
 	==> OK 
-
 
 
 
