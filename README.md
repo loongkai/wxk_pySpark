@@ -288,8 +288,11 @@ If using a path on the local filesystem, the file must also be accessible at the
 ![1569394501168](picture/1569394501168.png)
 
 ```
-PYTHONPATH:E:\spark-2.1.0-bin-2.6.0-cdh5.7.0\python
-SPARK_HOME:E:\spark-2.1.0-bin-2.6.0-cdh5.7.0
+PYTHONPATH:/home/wxk/app/spark-2.3.0-bin-2.6.0-cdh5.7.0/python
+SPARK_HOME:/home/wxk/app/spark-2.3.0-bin-2.6.0-cdh5.7.0
+JAVA_HOME:/home/wxk/app/jdk1.8.0_231
+
+PYTHONPATH=/home/wxk/app/spark-2.3.0-bin-2.6.0-cdh5.7.0/python;SPARK_HOME=/home/wxk/app/spark-2.3.0-bin-2.6.0-cdh5.7.0;JAVA_HOME=/home/wxk/app/jdk1.8.0_231;PYSPARK_PYTHON=/home/wxk/app/python3/bin/python3.6;PYSPARK_DRIVER_PYTHON=/home/wxk/app/python3/bin/python3.6
 ```
 
 ![1569394845441](picture/1569394845441.png)
@@ -382,7 +385,7 @@ RDD Operation
 
 
 		lazy(*****)
-		# 遇到collect才计算
+		# 遇到collect才计/home/wxk/app/spark-2.3.0-bin-2.6.0-cdh5.7.0/python算
 			rdda.map().filter()......collect
 		# transformation
 		map/filter/group by/distinct/.....
@@ -395,7 +398,7 @@ RDD Operation
 	# 特点
 	1) transformation are lazy, nothing actually happens until an action is called;
 	2) action triggers the computation;
-	3) action returns values to driver or writes data to external storage;
+	3) action returns values to driver(客户端) or writes data to external storage;
 ```
 
 + 程序
@@ -495,7 +498,10 @@ RDD Operation
       sc.stop()
   ```
 
-  
+  ```
+  export PYSPARK_PYTHON=/home/wxk/app/python3/bin/python3.6
+  export PYSPARK_DRIVER_PYTHON=/home/wxk/app/python3/bin/python3.6
+  ```
 
 ## 二、transformation算子使用
 

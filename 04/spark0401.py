@@ -12,6 +12,8 @@ if __name__ == '__main__':
         # 输出collect()
         print(rdd2.collect())
 
+    # my_map()
+
 
     def my_map2():
         a = sc.parallelize(["dog", "tiger", "lion", "cat", "panther", " eagle"])
