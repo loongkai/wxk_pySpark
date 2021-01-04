@@ -310,6 +310,9 @@ SPARK_HOME:E:\spark-2.1.0-bin-2.6.0-cdh5.7.0
 
 ```python
 from pyspark import SparkConf,SparkContext
+#下面用于解决找不到JAVA_HOME的错误
+import os
+os.environ['JAVA_HOME'] = '/home/wxk/app/jdk1.8.0_231'
 
 # 创建SparkConf：设置的是Spark相关的参数信息
 conf = SparkConf().setMaster("local[2]").setAppName("spark0301")
@@ -350,7 +353,7 @@ cd $SPARK_HOME/bin/
 ```
 
 ```
-./spark-submit --master local[2] --name spark0301 /home/jungle/script/spark0301.py 
+./spark-submit --master local[2] --name spark0301 /home/wxk/script/spark0301.py 
 ```
 
 ==报错==
