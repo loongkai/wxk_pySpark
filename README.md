@@ -700,7 +700,8 @@ file:///E:/code/python/pyspark_project/04/consult
 + 服务器上运行
 
 ```
-spark-submit --master local[2] --name spark0402 /home/jungle/script/spark0402.py file:///home/jungle/data/hello.txt file:///home/jungle/data/wc
+cd $SPARK_HOME/bin
+./spark-submit --master local[2] --name spark0402 /home/wxk/script/spark0402.py file:///home/wxk/data/hello.txt file:///home/wxk/data/wc
 ```
 
   ![1570281879451](picture/1570281879451.png)
