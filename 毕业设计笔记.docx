@@ -249,7 +249,7 @@ wxk000:4040
 
 配置spark环境变量
 vim ~/.bashrc
-export PYSPARK_PYTHON=python3.6
+export PYSPARK_PYTHON=/home/wxk/app/python3/bin/python3.6
 
 export SPARK_HOME=/home/wxk/app/spark-2.3.0-bin-2.6.0-cdh5.7.0
 export PATH=$SPARK_HOME/bin:$PATH
@@ -296,7 +296,6 @@ sc.textFile("file:///home/wxk/data/hello.txt").collect()
 sc.textFile("hdfs://wxk000:8020/hello.txt").collect()
 
 disData.saveAsTextFile("file:///home/wxk/data/output")，将本地文件转化为rdd数据集
-
 
 
 

@@ -191,7 +191,7 @@ vi ~/.bash_profile
 ```
 
 ```
-export PYSPARK_PYTHON=python3.5
+export PYSPARK_PYTHON=/home/wxk/app/python3/bin/python3.6
 ```
 
 ![1569390926533](picture/1569390926533.png)
@@ -817,7 +817,7 @@ Local模式：
 ```
 
 ```
-spark-submit --master local[2] --name spark-local /home/jungle/script/spark0402.py file:///home/jungle/data/hello.txt file:///home/jungle/wc/output
+spark-submit --master local[2] --name spark-local /home/jungle/script/spark0402.py file:///home/wxk/data/hello.txt file:///home/wxk/wc/output
 ```
 
 ## 二、standalone模式环境搭建
@@ -826,15 +826,15 @@ spark-submit --master local[2] --name spark-local /home/jungle/script/spark0402.
 
 ```
 standalone 
-	hdfs: NameNode  DataNode
+	hdfs: NameNode  DataNode(主从)
 	yarn: ResourceManager NodeManager
 
-	master:
-	worker:
+	master:（主）
+	worker:（从）
 	
 	cd $SPARK_HOME/conf/
 	cp slaves.template slaves
-	$SPARK_HOME/conf/slaves
+	vim $SPARK_HOME/conf/slaves
 		hadoop000
 
 		假设你有5台机器，就应该进行如下slaves的配置
@@ -847,15 +847,20 @@ standalone
 
 	启动spark集群
 		$SPARK_HOME/sbin/start-all.sh
-		ps: 要在spark-env.sh中添加JAVA_HOME，否则会报错
+		ps: 要在spark-env.sh中添加JAVA_HOME（前面不需要加export），否则会报错
+		cp spark-env.sh.template spark-env.sh
+		vim spark-env.sh
+		杀死进程 kill -9 进程号 (停止master进程)
 		检测： 
 			jps： Master和Worker进程，就说明我们的standalone模式安装成功
-			webui：
+			webui：wxk000:8080
+			7077(spark提交作业用的)
 # pyspark运行
-./pyspark --master spark://hadoop000:7077
+./pyspark --master spark://wxk000:7077
 
+(总结注意：在每次运行时，记得看是否切换过网络环境，如果切换过，那么要先$SPARK_HOME/sbin/stop-all.sh,然后再次$SPARK_HOME/sbin/start-all.sh)
 # spark-submit运行
-./spark-submit --master spark://hadoop000:7077 --name spark-standalone /home/jungle/script/spark0402.py hdfs://hadoop000:8020/wc.txt hdfs://hadoop000:8020/wc/output
+./spark-submit --master spark://wxk000:7077 --name spark-standalone /home/wxk/script/spark0402.py hdfs://wxk000:8020/hello.txt hdfs://wxk000:8020/wc/output
 
 	如果使用standalone模式，而且你的节点个数大于1的时候，如果你使用本地文件测试，必须要保证每个节点上都有本地测试文件
 ```
@@ -868,19 +873,19 @@ standalone
 yarn
 	mapreduce yarn
 	spark on yarn 70%
-	spark作业客户端而已，他需要做的事情就是提交作业到yarn上去执行
+	spark作为客户端而已，他需要做的事情就是提交作业到yarn上去执行
 	yarn vs standalone
 		yarn： 你只需要一个节点，然后提交作业即可   这个是不需要spark集群的（不需要启动master和worker的）
 		standalone：你的spark集群上每个节点都需要部署spark，然后需要启动spark集群（需要master和worker）
 
 
-./spark-submit --master yarn --name spark-yarn /home/hadoop/script/spark0402.py hdfs://hadoop000:8020/wc.txt hdfs://hadoop000:8020/wc/output
+./spark-submit --master yarn --name spark-yarn /home/wxk/script/spark0402.py hdfs://wxk000:8020/hello.txt hdfs://wxk000:8020/wc/output
 
 When running with master 'yarn' either HADOOP_CONF_DIR or YARN_CONF_DIR must be set in the environment
 
 
 
-作业：试想：为什么需要指定HADOOP_CONF_DIR或者YARN_CONF_DIR
+试想：为什么需要指定HADOOP_CONF_DIR或者YARN_CONF_DIR
 
 如何使得这个信息规避掉
 Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME
@@ -914,8 +919,8 @@ vi spark-env.sh
 ```
 
 ```
-JAVA_HOME=/home/jungle/app/jdk1.8.0_152                           
-HADOOP_CONF_DIR=/home/jungle/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop 
+JAVA_HOME=/home/wxk/app/jdk1.8.0_152                           
+HADOOP_CONF_DIR=/home/wxk/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop 
 ```
 
 ![1570353192251](picture/1570353192251.png)
@@ -970,7 +975,7 @@ Spark核心概述
 		Consists of a driver program and executors on the cluster.
 		for example:
 			spark0402.py
-			pyspark/spark-shell
+			pyspark/spark-shell（也是一个应用程序）
 
 	Driver program	
 		process:进程
