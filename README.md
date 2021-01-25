@@ -1,12 +1,20 @@
-# Python3实战Spark大数据分析及调度
+# 			基于大数据分析的应用实现
 
-# 第1章 课程介绍
+# 第1部分 介绍
 
-## 一、PySpark导学
+## 一、基本环境参数
 
-![1569293377157](picture/1569293377157.png)
+ 			**Linux版本：UOS                   Python:3.6.5**
 
-# 第2章 实战环境搭建
+​			**Hadoop版本：CDH(5.7)       spark版本: 2.3.0**
+
+​			**ElasticSearch:6.3.0     kibana:6.3.0**
+
+​			**开发工具：PyCharm       JDK: 1.8**
+
+​			**Azkaban: 3.x**
+
+# 第2部分 环境搭建
 
 ## 一、Python3环境部署
 
@@ -73,7 +81,7 @@ source ~/.bash_profile
 ./dev/make-distribution.sh --name 2.6.0-cdh5.7.0 --tgz  -Pyarn -Phadoop-2.6 -Phive -Phive-thriftserver -Dhadoop.version=2.6.0-cdh5.7.0
 ```
 
-# 第3章 Spark Core核心RDD
+# 第3部分 Spark Core核心RDD
 
 ## 一、RDD是什么
 
@@ -197,7 +205,7 @@ export PYSPARK_PYTHON=/home/wxk/app/python3/bin/python3.6
 ![1569390926533](picture/1569390926533.png)
 
 ```
-source ~/.bash_profile
+1569295539724source ~/.bash_profile
 ```
 
 ## 七、RDD的创建
@@ -369,7 +377,7 @@ cd $SPARK_HOME/bin/
 
 
 
-# 第4章 Spark Core RDD编程
+# 第4部分 Spark Core RDD编程
 
 ## 一、RDD常用操作
 
@@ -630,7 +638,7 @@ join：
         rdd.foreach(lambda x:print(x))
 ```
 
-## 四、算子综合案例实战
+## 四、算子综合案例
 
 ### 1.词频统计
 
@@ -801,7 +809,7 @@ if __name__ == '__main__':
     sc.stop()
 ```
 
-# 第5章 Spark运行模式
+# 第5部分 Spark运行模式
 
 ## 一、local模式运行
 
@@ -962,7 +970,7 @@ spark.executorEnv.PYTHONHASHSEED=0
 
   
 
-# 第6章 Spark Core进阶
+# 第6部分 Spark Core进阶
 
 ## 一、Spark核心概念详解
 
@@ -1233,7 +1241,7 @@ sc.textFile("file:///home/jungle/data/hello.txt").flatMap(lambda line: line.spli
 
 
 
-# 第7章 Spark Core调优
+# 第7部分 Spark Core调优
 
 ## 一、优化之HistoryServer配置及使用
 
@@ -1249,6 +1257,7 @@ spark-submit --master local[2] --name spark0301 /home/jungle/script/spark0301.py
 
   ```
   cd $SPARK_HOME/conf
+  cp spark-defaults.conf.template spark-defaults.conf
   vi spark-defaults.conf
   ```
 
@@ -1264,7 +1273,7 @@ spark-submit --master local[2] --name spark0301 /home/jungle/script/spark0301.py
   ```
 
   ```
-  SPARK_HISTORY_OPTS="-Dspark.history.fs.logDirectory=hdfs://centosserver1:8020/directory "
+  SPARK_HISTORY_OPTS="-Dspark.history.fs.logDirectory=hdfs://centosserver1:8020/directory"
   ```
 
   ![1570697076430](picture/1570697076430.png)
@@ -1293,7 +1302,7 @@ spark-submit --master local[2] --name spark0301 /home/jungle/script/spark0301.py
 + 测试
 
 ```
-spark-submit --master local[2] --name spark0301 /home/jungle/script/spark0301.py 
+spark-submit --master local[2] --name spark0301 /home/wxk/script/spark0301.py 
 ```
 
 ![1570697722846](picture/1570697722846.png)
@@ -1361,7 +1370,7 @@ Data locality is how close data is to the code processing it. There are several 
 
 
 
-# 第8章 Spark SQL
+# 第8部分 Spark SQL
 
 ## 一、Spark SQL前世今生
 
@@ -1604,7 +1613,7 @@ def programmatic_schema_example(spark):
     results.show()
 ```
 
-# 第9章 Spark Streaming
+# 第9部分 Spark Streaming
 
 ## 一、 从词频统计案例来了解SparkStreaming 
 
@@ -1756,7 +1765,7 @@ if __name__ == '__main__':
 
 ---
 
-# 第10章 Azkaban基础篇
+# 第10部分 Azkaban基础篇
 
 [参考网址]( https://azkaban.github.io/ )
 
@@ -2200,7 +2209,7 @@ Uploads overwrite all files in the project. Any changes made to jobs will be wip
 
 After a successful upload, you should see all of your flows listed on the screen.
 
-# 第11章 Azkaban实战篇
+# 第11部分 Azkaban相关使用
 
 ##  一、依赖作业在Azkaban中的使用 
 
@@ -2435,7 +2444,7 @@ SLA：某个作业必须要在某个时间范围内要执行完成
 
 ![1571141851836](picture/1571141851836.png)
 
-# 第12章 Azkaban进阶篇
+# 第12部分 Azkaban进阶
 
 ##  一、Multi Executor Serve
 
@@ -2794,7 +2803,7 @@ curl -k --get --data "session.id=1590ab7a-503a-4430-bf39-21391b83d616&ajax=fetch
 curl -k --get --data "session.id=1590ab7a-503a-4430-bf39-21391b83d616&ajax=fetchprojectflows&project=ipget&flow=hadoop" http://192.168.1.18:9081/manager
 ```
 
-# 第13章 项目实战
+# 第13部分 数据分析可视化展示应用
 
 ## 一、 大数据项目开发流程 
 
