@@ -1,0 +1,798 @@
+Docker 是一个开源的应用容器引擎，让开发者可以打包他们的应用以及依赖包到一个可移植的容器中，然后发布到任何流行的 Linux 机器上，也可以实现虚拟化。容器是完全使用沙箱机制，相互之间不会有任何接口。
+
+
+一、在Docker中安装ubuntu系统
+下载ubuntu系统，默认是最新的
+docker pull ubuntu
+使用docker images命令可以查看下载的镜像：
+
+#运行最后一个镜像
+docker run -ti ubuntu:15.10   
+#运行第一个镜像
+docker run -ti ubuntu:spark
+注意：进入容器之后，想要容器后台运行而不结束容器，可以使用Crl+P+Q退出
+二、在ubuntu系统中安装必要的工具
+接下来是安装集群了，包括zookeeper、hadoop、spark.
+接下来的工作可能会用到如下命令：
+wget http://... ，用于下载资源文件
+ifconfig 用于查看当前容器ip信息
+vim 用于编辑文件
+所以我们在这里可以先进行安装这些工具:
+$ apt update
+$ apt install wget
+$ apt install vim
+$ apt install net-tools       # ifconfig 
+$ apt install iputils-ping     # ping
+都安装好后，可以将此装好环境变量的镜像保存为一个副本，以后可以基于此副本构建其它镜像：容器的id就是我们刚才退出的那个容器，可以使用命令docker ps查看所有运行的容器的信息
+docker commit -m "wget vim net-tools iputils-ping install" 容器ID ubuntu:v1
+三、下载jdk、Zookeeper、 Hadoop、Spark、Scala
+下载集群资源
+我们计划将集群的 Zookeeper、Hadoop、Spark 安装到统一的目录 /root/soft/apache下。
+所以在这里我们要先构建这个目录：
+$ cd ~/
+$ mkdir app
+$ maker software
+$ mkdir source
+$ mkdir maven_repository
+$ mkdir script
+
+或者 用cp命令
+
+docker cp /home/wxk/app cf28ae654efb:/root/
+
+四、安装、配置Zookeeper、 Hadoop、Spark、Scala 。python java
+
+
+jdk1.8
+tar -zxvf jdk-8u231-linux-x64.tar.gz  -C ~/app/
+
+配置环境变量
+vim ~/.bashrc (ubuntu vim ~/.bashrc)
+export JAVA_HOME=/root/app/jdk1.8.0_231
+export PATH=$JAVA_HOME/bin:$PATH
+source ~/.bashrc(ubuntu source ~/.profile)
+
+                 scala2.11.8
+tar -zxvf scala-2.11.8.tgz  -C ~/app
+配置环境变量
+vim ~/.bashrc
+export SCALA_HOME=/root/app/scala-2.11.8
+export PATH=$SCALA_HOME/bin:$PATH
+source ~/.bashrc
+
+                                    maven3.3.9
+tar -zxvf apache-maven-3.3.9-bin.tar.gz -C ~/app/
+配置环境变量
+vim ~/.bashrc
+export MAVEN_HOME=/root/app/apache-maven-3.3.9
+export PATH=$MAVEN_HOME/bin:$PATH
+source ~/.bashrc
+
+                                               修改maven配置
+mkdir ~/maven_repository
+vim $MAVEN_HOME/conf/settings.xml
+  <localRepository>/root/maven_repository</localRepository>
+
+                                                  添加maven阿里云仓库
+在setttins.xml文件中找到<mirrors></mirrors>标签对,进行修改：
+
+<mirrors>
+      <mirror>
+         <id>nexus-aliyun</id>
+         <mirrorOf>*</mirrorOf>
+         <name>Nexus aliyun</name>
+         <url>http://maven.aliyun.com/nexus/content/groups/public</url>
+      </mirror> 
+</mirrors>
+
+                                                       安装python3.6.5
+cd ~/software/
+wget https://www.python.org/ftp/python/3.6.5/Python-3.6.5.tgz
+tar -zxvf Python-3.6.5.tgz
+配置环境变量
+--编译前安装依赖，python依赖安装
+
+yum -y install zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel db4-devel libpcap-devel xz-devel
+
+cd Python-3.6.5/
+
+./configure --prefix=/root/app/python3
+
+make && make install
+
+cd /root/app/python3/bin
+pwd
+--配置环境变量
+vi ~/.bashrc
+export PATH=/root/app/python3/bin:$PATH
+source ~/.bashrc
+
+
+
+
+安装 Zookeeper
+下载 zookeeper
+
+然后到这里下载 zookeeper 到 /root/software 目录下, 我这里下载的是 zookeeper-3.4.9
+
+    $ cd /root/software
+    $	wget http://archive.apache.org/dist/zookeeper/zookeeper-3.4.9/zookeeper-3.4.9.tar.gz
+
+
+tar -zxvf zookeeper-3.4.9.tar.gz -C ~/app
+
+
+修改 ~/.bashrc, 配置 zookeeper 环境变量
+
+    $ vim ~/.bashrc 
+       export ZOOKEEPER_HOME=/root/app/zookeeper-3.4.9
+       export PATH=$PATH:$ZOOKEEPER_HOME/bin
+$ source ~/.bashrc #使环境变量生效
+
+修改 zookeeper 配置信息：
+ cd ~/app/zookeeper-3.4.9/conf/
+cp zoo_sample.cfg zoo.cfg
+vim zoo.cfg
+
+修改如下信息：
+
+    dataDir=/root/app/zookeeper-3.4.9/tmp
+    server.1=master:2888:3888
+    server.2=slave1:2888:3888
+    server.3=slave2:2888:3888
+
+
+接下来添加 myid 文件
+
+    $ cd ../
+    $ mkdir tmp
+    $ cd tmp
+    $ touch myid
+    $ echo 1 > myid
+
+..../tmp/myid 文件中保存的数字代表本机的zkServer编号 在此设置master为编号为1的zkServer，之后生成slave1和slave2之后还需要分别修改此文件
+
+
+安装 Hadoop
+    修改 ~/.bashrc, 配置 hadoop 环境变量
+
+    $ vim ~/.bashrc
+         export HADOOP_HOME=/root/app/hadoop-2.6.0-cdh5.7.0
+         export HADOOP_CONFIG_HOME=$HADOOP_HOME/etc/hadoop
+         export PATH=$PATH:$HADOOP_HOME/bin
+         export PATH=$PATH:$HADOOP_HOME/sbin
+       # 保存退出 esc :wq!
+    $ source ~/.bashrc #使环境变量生效
+
+
+
+
+
+配置 hadoop
+
+
+    vim hadoop-env.sh
+export JAVA_HOME=/root/app/jdk1.8.0_231
+
+进入 `hadoop` 配置文件的目录，因为 `hadoop` 所有的配置都在此目录下
+$ cd $HADOOP_CONFIG_HOME/
+
+修改核心配置 core-site.xml, 添加如下信息到此文件的< configuration > </configuration > 中间
+vim core-site.xml
+    <configuration>
+        <property>
+             <name>hadoop.tmp.dir</name>
+             <value>/root/app/hadoop-2.6.0-cdh5.7.0/tmp</value>
+             <description>A base for other temporary directories.</description>
+         </property>
+         <property>
+             <name>fs.default.name</name>
+             <value>hdfs://master:9000</value>
+             <final>true</final>
+             <description>The name of the default file system.  A URI whose scheme and authority determine the FileSystem implementation.  The uri's scheme determines the config property (fs.SCHEME.impl) naming the FileSystem implementation class.  The uri's authority is used to determine the host, port, etc. for a filesystem.</description>
+          </property>
+          <property>
+                        <name>ha.zookeeper.quorum</name>
+                        <value>master:2181,slave1:2181,slave2:2181</value>
+            </property>
+    </configuration>
+
+修改 vim hdfs-site.xml, 添加如下信息：
+
+    # dfs.nameservices 名称服务，在基于HA的HDFS中，用名称服务来表示当前活动的NameNode
+    # dfs.ha.namenodes. 配置名称服务下有哪些NameNode 
+    # dfs.namenode.rpc-address.. 配置NameNode远程调用地址 
+    # dfs.namenode.http-address.. 配置NameNode浏览器访问地址 
+    # dfs.namenode.shared.edits.dir 配置名称服务对应的JournalNode 
+    # dfs.journalnode.edits.dir JournalNode存储数据的路径
+     
+    <configuration>
+    <property>
+       <name>dfs.nameservices</name>
+       <value>ns1</value>
+    </property>
+    <property>
+       <name>dfs.ha.namenodes.ns1</name>
+       <value>nn1,nn2</value>
+    </property>
+    <property>
+       <name>dfs.namenode.rpc-address.ns1.nn1</name>
+       <value>master:9000</value>
+    </property>
+    <property>
+       <name>dfs.namenode.http-address.ns1.nn1</name>
+       <value>master:50070</value>
+    </property>
+    <property>
+       <name>dfs.namenode.rpc-address.ns1.nn2</name>
+       <value>slave1:9000</value>
+    </property>
+    <property>
+       <name>dfs.namenode.http-address.ns1.nn2</name>
+       <value>slave1:50070</value>
+    </property>
+    <property>
+       <name>dfs.namenode.shared.edits.dir</name>
+    <value>qjournal://master:8485;slave1:8485;slave2:8485/ns1</value>
+    </property>
+    <property>
+       <name>dfs.journalnode.edits.dir</name>
+       <value>/root/app/hadoop-2.6.0-cdh5.7.0/journal</value>
+    </property>
+    <property>
+       <name>dfs.ha.automatic-failover.enabled</name>
+       <value>true</value>
+    </property>
+    <property>
+       <name>dfs.client.failover.proxy.provider.ns1</name>
+       <value>
+       org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider
+       </value>
+    </property>
+    <property>
+       <name>dfs.ha.fencing.methods</name>
+       <value>
+       sshfence
+       shell(/bin/true)
+       </value>
+    </property>
+    <property>
+       <name>dfs.ha.fencing.ssh.private-key-files</name>
+       <value>/root/.ssh/id_rsa</value>
+    </property>
+    <property>
+       <name>dfs.ha.fencing.ssh.connect-timeout</name>
+       <value>30000</value>
+    </property>
+     <property>
+                        <name>ha.zookeeper.quorum</name>
+                        <value>master:2181,slave1:2181,slave2:2181</value>
+     </property>
+    </configuration>
+
+修改 Yarn 的配置文件vim yarn-site.xml：
+
+    # yarn.resourcemanager.hostname RescourceManager的地址，NodeManager的地址在slaves文件中定义
+     
+    <configuration>
+    <!-- Site specific YARN configuration properties -->
+    <property>
+       <name>yarn.resourcemanager.hostname</name>
+       <value>master</value>
+    </property>
+    <property>
+       <name>yarn.nodemanager.aux-services</name>
+       <value>mapreduce_shuffle</value>
+    </property>
+    </configuration>
+
+修改 mapred-site.xml
+这个文件是不存在的，需要将 mapred-site.xml.template copy一份
+
+$ cp mapred-site.xml.template mapred-site.xml
+
+然后编辑 vim mapred-site.xml ，添加如下信息到文件
+
+    <configuration>
+    <!-- 指定MapReduce框架为yarn方式 -->
+    <property>
+        <name>
+          mapreduce.framework.name
+        </name>
+        <value>yarn</value>
+    </property>
+    </configuration>
+
+修改指定 DataNode 和 NodeManager 的配置文件 slaves :
+
+$ vim slaves
+
+添加如下节点名
+
+    master
+    slave1
+    slave2
+
+
+    安装配置 Spark
+
+进入 spark 目录，
+
+
+修改 ~/.bashrc, 配置 spark 环境变量
+
+    $ vim ~/.bashrc
+        export SPARK_HOME=/root/app/spark-2.3.0-bin-2.6.0-cdh5.7.0
+        export PYSPARK_PYTHON=/root/app/python3/bin/python3.6
+        export PATH=$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH
+       # 保存退出 esc :wq!
+    $ source ~/.bashrc #使环境变量生效
+
+修改 spark 配置
+
+    $ cd spark-2.3.0-bin-2.6.0-cdh5.7.0/conf
+    $ cp spark-env.sh.template spark-env.sh
+    $ vim spark-env.sh
+
+添加如下信息：
+
+     SPARK_MASTER_IP=master
+     SPARK_WORKER_MEMORY=128m
+     JAVA_HOME=/root/app/jdk1.8.0_231
+     SCALA_HOME=/root/app/scala-2.11.8  # scala我们后面会安装它
+     SPARK_HOME=/root/app/spark-2.3.0-bin-2.6.0-cdh5.7.0
+     HADOOP_CONF_DIR=/root/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop 
+     SPARK_HISTORY_OPTS="-Dspark.history.fs.logDirectory=hdfs://master:9000/directory"
+     SPARK_LIBRARY_PATH=$SPARK_HOME/lib
+     SCALA_LIBRARY_PATH=$SPARK_LIBRARY_PATH
+     SPARK_WORKER_CORES=1
+     SPARK_WORKER_INSTANCES=1
+     SPARK_MASTER_PORT=7077
+
+保存退出 esc :wq!
+
+修改指定Worker的配置文件 slaves：
+
+$ vim slaves
+
+添加
+
+    master
+    slave1
+    slave2
+
+到这里，Spark 也算安装配置完成了。
+
+
+
+
+    安装 SSH, 配置无密码访问集群其它机器
+
+搭建集群环境，自然少不了使用SSH。这可以实现无密码访问，访问集群机器的时候很方便。
+使用如下命令安装 ssh
+
+apt install ssh 
+
+SSH装好了以后，由于我们是 Docker 容器中运行，所以 SSH 服务不会自动启动。需要我们在容器启动以后，手动通过/usr/sbin/sshd 手动打开SSH服务。未免有些麻烦，为了方便，我们把这个命令加入到~/.bashrc文件中。通过vim ~/.bashrc编辑.bashrc文件,
+
+vim ~/.bashrc
+
+在文件后追加下面内容：
+
+    #autorun
+    /usr/sbin/sshd
+
+然后运行 source ~/.bashrc 使配置生效
+
+$ source ~/.bashrc
+
+此过程可能会报错:
+Missing privilege separation directory: /var/run/sshd 需要自己创建这个目录
+
+$ mkdir /var/run/sshd
+
+生成访问密钥
+
+    $ cd ~/
+    $ ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa
+    $ cd .ssh
+    $ cat id_rsa.pub >> authorized_keys
+
+注意： 这里，我的思路是直接将密钥生成后写入镜像，免得在买个容器里面再单独生成一次，还要相互拷贝公钥，比较麻烦。当然这只是学习使用，实际操作时，应该不会这么搞，因为这样所有容器的密钥都是一样的！！！
+
+到这里，SSH 也算安装配置完成了
+到这里，Spark 集群算是基本安装配置好了，剩下就是部署分布式了。
+
+ 
+
+这里我们将安装好Zookeeper、 Hadopp、 Spark、Scala 的镜像保存为一个副本
+
+    退出 Docker
+
+$ exit 
+
+    保存一个副本
+$docker commit -m "zookeeper hadoop pyspark scala python java install" 容器ID ubuntu:spark
+
+之后我们会基于此副本来运行我们的集群
+
+
+
+五、启动集群
+
+首先我们对三个终端进行分别验证IP规则，在此之前需要关闭docker中所有正在运行的容器：
+
+终端 1:
+
+    $ docker run -ti -h master ubuntu:spark
+    $ ifconfig #172.17.0.2
+
+终端 2:
+
+    $ docker run -ti -h slave1 ubuntu:sparksoft
+
+    $ docker run -ti -h slave2 ubuntu:spark
+    $ ifconfig #172.17.0.4
+
+看到了没，这3个Docker的 ip 分别是172.17.0.2、 172.17.0.3 、172.17.0.4，它是取决于启动Docker 的顺序的。
+接下来退出这几个Docker，然后编写启动脚本
+
+ 
+
+编写集群节点启动脚本
+启动 ubuntu:spark
+
+$ docker run -ti ubuntu:spark
+
+进入 /root/soft 目录，我们将启动脚本都放这里吧
+
+    $ cd /root/soft
+    $ mkdir shell
+    $ cd shell
+
+vim run_master.sh 创建 Master 节点的运行脚本
+
+$ vim run_master.sh 
+
+添加如下信息：
+
+#!/bin/bash
+#清空hosts文件信息
+echo> /etc/hosts
+#配置主机的host
+echo 172.17.0.1 host >> /etc/hosts
+echo 172.17.0.2 master >> /etc/hosts
+echo 172.17.0.3 slave1 >> /etc/hosts
+echo 172.17.0.4 slave2 >> /etc/hosts
+ 
+#配置 master 节点的 zookeeper 的 server id
+echo 1 > /root/app/zookeeper-3.4.9/tmp/myid
+ 
+zkServer.sh start
+ 
+hadoop-daemons.sh start journalnode
+hdfs namenode -format
+hdfs zkfc -formatZK
+ 
+start-dfs.sh
+start-yarn.sh
+start-all.sh
+
+
+     
+
+vim run_slave1.sh 创建 Slave1 节点的运行脚本
+
+$ vim run_slave1.sh 
+
+添加如下信息：
+
+#!/bin/bash
+#清空hosts文件信息
+echo> /etc/hosts
+#配置主机的host
+echo 172.17.0.1 host >> /etc/hosts
+echo 172.17.0.2 master >> /etc/hosts
+echo 172.17.0.3 slave1 >> /etc/hosts
+echo 172.17.0.4 slave2 >> /etc/hosts
+     
+#配置 master 节点的 zookeeper 的 server id
+echo 2 > /root/app/zookeeper-3.4.9/tmp/myid
+     
+zkServer.sh start
+
+
+
+    vim run_slave2.sh 创建 Slave2 节点的运行脚本
+
+$ vim run_slave2.sh 
+
+添加如下信息：
+
+#!/bin/bash
+#清空hosts文件信息
+echo> /etc/hosts
+#配置主机的host
+echo 172.17.0.1 host >> /etc/hosts
+echo 172.17.0.2 master >> /etc/hosts
+echo 172.17.0.3 slave1 >> /etc/hosts
+echo 172.17.0.4 slave2 >> /etc/hosts
+     
+#配置 master 节点的 zookeeper 的 server id
+echo 3 > /root/app/zookeeper-3.4.9/tmp/myid
+     
+zkServer.sh start
+
+
+
+    vim stop_master.sh 创建 Stop 脚本
+
+$ vim stop_master.sh 
+
+添加如下信息：
+
+     
+#!/bin/bash
+zkServer.sh stop
+hadoop-daemons.sh stop journalnode
+stop-dfs.sh
+stop-yarn.sh
+stop-all.sh
+
+各节点运行脚本到此编写完成。
+
+    最后
+
+    chmod +x run_master.sh
+    chmod +x run_slave1.sh
+    chmod +x run_slave2.sh
+    chmod +x stop_master.sh
+
+    退出 Docker, 并保存副本
+
+$ exit
+
+    保存副本
+
+$ docker commit -m "zookeeper hadoop spark scala install" 容器ID ubuntu:spark
+
+    配置虚拟机 ubuntu 的 hosts
+
+$ sudo vim /etc/hosts
+
+注意：添加如下hosts，不然远程访问肯定会出错的
+
+172.17.0.1      host
+172.17.0.2      master
+172.17.0.3      slave1
+172.17.0.4      slave2
+
+到此所有配置安装基本完成了，下面开启你的Spark集群吧！！！
+
+(------------------
+启动master：
+
+    $  docker run -ti -h master -p 50070:50070 --name master ubuntu:spark
+    $ ./root/app/shell/run_master.sh
+
+启动slave1：
+
+    启动 Slave1 节点
+    $ docker run -ti -h slave1 --name  slave1 ubuntu:spark
+    运行 run_slave1.sh 启动脚本
+    $ ./root/app/shell/run_slave1.sh
+
+启动slave2：
+
+    启动 Slave2 节点
+    $ docker run -ti -h slave2 --name  slave2 ubuntu:spark
+    运行 run_slave2.sh 启动脚本
+    $ ./root/app/shell/run_slave2.sh
+
+切换到master终端：(在这之前先 ssh master   ssh slave1   ssh slave2   不然会链接失败)
+
+    root@master:hadoop-daemons.sh start journalnode
+    选择master机器来格式化hdfs
+    root@master:hdfs namenode -format
+    root@master:hadoop-daemon.sh start namenode
+
+再另外一台namenode机器上拉取元数据
+
+root@slave1:hdfs namenode -bootstrapStandby
+
+格式化
+
+root@master:hdfs zkfc -formatZK
+
+启动：
+
+root@master:start-dfs.sh
+
+访问hdfs的管理页面试试：
+-------------------------------)
+
+启动 Spark 集群
+
+    启动 Master 节点
+
+    $ docker run -ti -h master --name master ubuntu:spark 
+
+    在这里先不要着急着运行 run_master.sh 启动脚本。等最后再运行
+
+    启动 Slave1 节点
+
+    $ docker run -ti -h slave1 --name slave1 ubuntu:spark 
+
+    运行 run_slave1.sh 启动脚本
+
+    $ ./root/app/shell/run_slave1.sh
+
+    启动 Slave2 节点
+
+    $ docker run -ti -h slave2 --name slave2 ubuntu:spark 
+
+    运行 run_slave2.sh 启动脚本
+
+    $ ./root/app/shell/run_slave2.sh
+
+    最后再运行 Master 节点的启动脚本 run_master.sh
+
+    切换到启动了 Master 节点的 Docker 终端
+
+    $ ./root/app/shell/run_master.sh
+
+    可以使用 jps 命令查看当前集群运行情况
+
+    $ jps
+
+    不出意外的话，你应该能看到类似如下信息：
+
+        2081 QuorumPeerMain
+        3011 NodeManager
+        2900 ResourceManager
+        2165 JournalNode
+        2405 NameNode
+        3159 Worker
+        2503 DataNode
+        3207 Jps
+
+到此已经启动了你的 Spark 集群了。
+
+    还可以登录web管理台来查看运行状况：
+
+          服务        地址
+         HDFS    master:50070
+         Yarn      master:8088
+         Spark    master:8080
+
+
+Spark Core调优
+一、优化之HistoryServer配置及使用
+参考网址
+spark-submit --master local[2] --name spark0301 /root/app/script/spark0301.py 
+
+
+•设置
+ cd $SPARK_HOME/conf
+vi spark-defaults.conf
+ spark.eventLog.enabled           true                                
+spark.eventLog.dir               hdfs://master:9000/directory 
+ 
+ 
+ vi spark-env.sh
+ SPARK_HISTORY_OPTS="-Dspark.history.fs.logDirectory=hdfs://master:9000/directory "
+ 
+ 
+ hadoop fs -mkdir /directory(后续集成进run_master脚本)
+ 
+•启动
+ cd $SPARK_HOME/sbin
+./start-history-server.sh((后续集成进run_master脚本))
+•访问
+ http://master:18080
+ 
+ 
+•测试
+spark-submit --master local[2] --name spark0301 /root/app/script/spark0301.py 
+
+./spark-submit --master yarn --name spark-yarn /root/app/script/spark0402.py hdfs://master:9000/hello.txt hdfs://master:9000/wc/output
+
+
+
+
+Spark运行可能会出现ImportError: libffi.so.6: cannot open shared object file: no such file or directory 错误
+解决方法参考 https://blog.csdn.net/qq_33317126/article/details/108388332
+
+Ubuntu系统升级并不只是升级系统，同时也会将一些系统的lib文件和依赖文件也升级，所以在Ubuntu18.04下的libffi.so.6就升级成为了20.04版本下的libffi.so.7，所以其实文件是有的。找到文件就好办了，创建一个名为libffi.so.6的软连接指向libffi.so.7就可以使用了。
+
+所以可以先使用find命令找到libffi.so.7在哪儿：
+
+find /usr/lib -name "libffi.so*"
+
+接下来就是创建软连接：
+
+ ln -s /usr/lib/x86_64-linux-gnu/libffi.so.7 /usr/lib/x86_64-linux-gnu/libffi.so.6
+
+
+
+•关闭
+cd $SPARK_HOME/sbin
+./stop-history-server.sh
+
+保存一个副本
+$docker commit -m "zookeeper hadoop pyspark scala python java spark-historyserver install" 容器ID ubuntu:spark
+
+
+
+ 
+六、向hdfs中上传文件
+hadoop fs -put zookeeper.out /
+2.txt是我要上传的文件，one.py是测试程序
+
+one.py
+
+     
+    # from hdfs import InsecureClient
+     
+    c = InsecureClient(url="http://172.17.0.2:50070",user='root',root='/')
+    c.makedirs('/user/root/pyhdfs')
+    c.upload('/user/root/pyhdfs/', './2.txt', True)
+
+如果没有报错，那就说明没问题了，在Utilities中就能看得到我们上传的文件
+
+七、遇到的问题以及解决方法
+
+问题一：两台namenode都是Standby状态，此状态是不能够被远程访问上传文件的，节点必须处于active状态。
+
+查看两台机器的状态
+
+    root@master:/# hdfs haadmin -getServiceState nn1
+    standby
+    root@master:/# hdfs haadmin -getServiceState nn2
+    standby
+
+将master激活态
+
+root@master:/# hdfs haadmin -transitionToActive --forcemanual nn1
+
+或者可以切换两台机器的状态，只能有一个机器是active状态：
+
+    root@master:/# hdfs haadmin -transitionToStandby --forcemanual nn2
+    root@master:/# hdfs haadmin -transitionToActive --forcemanual nn1
+
+问题二：Cluster IDs not matched: dn cid=CID-a7a5843e-9c9f-4367-9d6c-246196ccd64e but ns cid=CID-f8d26769-ddea-4ce4-b02e-df4fc23c6204; bpid=BP-1438331429-172.17.0.2-1580539601133
+
+这是因为重复格式化namenode造成的，只需要格式化一个namenode，然后另外一个拉取元数据就可以了，运行集群的顺序要和上面的一致。
+
+为题三：
+
+Traceback (most recent call last):
+
+  File "one.py", line 5, in <module>
+
+    c.upload('/user/root/pyhdfs/3.txt', './2.txt', True)
+
+  File "/usr/lib/python2.7/site-packages/hdfs/client.py", line 611, in upload
+
+    raise err
+
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x135df90>: Failed to establish a new connection: [Errno -2] Name or service not known
+
+/etc/hosts
+
+ 
+
+Operation failed: End of File Exception between local host is: "master/172.17.0.2"; destination host is: "master":
+
+这是因为没改本地的hosts文件，按照上面的方法在本地的hosts中追加一些ip即可
+
+原来：
+
+修改后：
+
+    172.17.0.1      host
+    172.17.0.2      master
+    172.17.0.3      slave1
+    172.17.0.4      slave2
+
+ 

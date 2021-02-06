@@ -40,7 +40,17 @@ mkdir ~/maven_repository
 vim $MAVEN_HOME/conf/settings.xml
   <localRepository>/home/wxk/maven_repository</localRepository>
 
-添加maven阿里云仓库
+添加maven阿里云仓库export SPARK_MASTER_IP=master
+    export SPARK_WORKER_MEMORY=128m
+    export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+    export SCALA_HOME=/root/app/scala-2.11.11  # scala我们后面会安装它
+    export SPARK_HOME=/root/soft/apache/spark/spark-2.2.0-bin-hadoop2.7
+    export HADOOP_CONF_DIR=/root/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop
+    export SPARK_LIBRARY_PATH=$SPARK_HOME/lib
+    export SCALA_LIBRARY_PATH=$SPARK_LIBRARY_PATH
+    export SPARK_WORKER_CORES=1
+    export SPARK_WORKER_INSTANCES=1
+    export SPARK_MASTER_PORT=7077
 在setttins.xml文件中找到<mirrors></mirrors>标签对,进行修改：
 
 <mirrors>
@@ -296,7 +306,6 @@ sc.textFile("file:///home/wxk/data/hello.txt").collect()
 sc.textFile("hdfs://wxk000:8020/hello.txt").collect()
 
 disData.saveAsTextFile("file:///home/wxk/data/output")，将本地文件转化为rdd数据集
-
 
 
 

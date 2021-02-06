@@ -12,7 +12,7 @@ if __name__ == '__main__':
         # 输出collect()
         print(rdd2.collect())
 
-    # my_map()
+    # my_map()wxk_pySpark
 
 
     def my_map2():

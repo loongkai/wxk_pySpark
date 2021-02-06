@@ -4,7 +4,7 @@ from pyspark import SparkContext
 from pyspark.streaming import StreamingContext
 
 if __name__ == '__main__':
-
+#传入参数
     if len(sys.argv) != 3:
         print("Usage: spark0901.py <hostname> <port>", file=sys.stderr)
         sys.exit(-1)

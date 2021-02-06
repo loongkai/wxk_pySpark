@@ -638,7 +638,7 @@ join：
         rdd.foreach(lambda x:print(x))
 ```
 
-## 四、算子综合案例
+## 四、算子综合应用
 
 ### 1.词频统计
 
@@ -1368,7 +1368,7 @@ Data locality is how close data is to the code processing it. There are several 
 - `RACK_LOCAL` data is on the same rack of servers. Data is on a different server on the same rack so needs to be sent over the network, typically through a single switch
 - `ANY` data is elsewhere on the network and not in the same rack
 
-
+  ​			移动计算而不是移动数据
 
 # 第8部分 Spark SQL
 
@@ -1485,7 +1485,7 @@ pyspark
 ```
 
 ```
-df = spark.read.json("file:///home/jungle/app/spark-2.1.0-bin-2.6.0-cdh5.7.0/examples/src/main/resources/people.json")
+df = spark.read.json("file:///home/wxk/app/spark-2.3.0-bin-2.6.0-cdh5.7.0/examples/src/main/resources/people.json")
 df.show()
 ```
 
@@ -1668,7 +1668,7 @@ nc -lk 9999
 
 ```
 cd $SPARK_HOME
-spark-submit examples/src/main/python/streaming/network_wordcount.py localhost 9999
+./bin/spark-submit examples/src/main/python/streaming/network_wordcount.py localhost 9999
 ```
 
 > ui:192.168.1.18:4040
@@ -1934,7 +1934,7 @@ Azkaban运行模式
    这边在Windows浏览器中下载
 
    ```
-   wegt https://services.gradle.org/distributions/gradle-4.1-all.zip
+   wget https://services.gradle.org/distributions/gradle-4.1-all.zip
    ```
 
    ![1570964454226](picture/1570964454226.png)
@@ -1998,11 +1998,11 @@ Azkaban运行模式
      1、打开以下网址，下载JCE压缩包：
      http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html
 
-      ![å¨è¿éæå¥å¾çæè¿°](https://img-blog.csdnimg.cn/20190308105619430.png) 
+      ![](https://img-blog.csdnimg.cn/20190308105619430.png) 
 
      压缩包里有以下文件：
 
-      ![å¨è¿éæå¥å¾çæè¿°](https://img-blog.csdnimg.cn/20190308105800737.png) 
+      ![](https://img-blog.csdnimg.cn/20190308105800737.png) 
 
      2、将压缩包解压，local_policy.jar和US_export_policy.jar这两个jar包放到$JAVA_HOME/jre/lib/security目录。因为目录下已有这两个文件，可以先备份，再覆盖。
 
@@ -2086,7 +2086,7 @@ cd /home/jungle/app/azkaban-solo-server-0.1.0-SNAPSHOT/bin
 
 > Cannot find 'database.properties' file
 
- 解决方案是： 
+ **<u>解决方案是：(最好的解决方法在bin的上级目录运行 bin/azkaban-solo-start.sh   不能进入bin里用sh,应为shell没写得好)</u>** 
 
 ```
 cd conf
@@ -2142,7 +2142,7 @@ vi azkaban-users.xml
 ```
 
 ```xml
-<user password="123456" roles="admin" username="jungle"/>
+<user password="123456" roles="admin" username="wxk"/>
 ```
 
 ![1570975414346](picture/1570975414346.png)
