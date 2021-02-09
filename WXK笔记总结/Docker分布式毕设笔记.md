@@ -8,8 +8,9 @@ docker pull ubuntu
 #运行最后一个镜像
 docker run -ti ubuntu:15.10   
 #运行第一个镜像
-docker run -ti ubuntu:spark
+docker run -ti ubuntu:sparkmysql_secure_installation
 注意：进入容器之后，想要容器后台运行而不结束容器，可以使用Crl+P+Q退出
+
 # 二、在ubuntu系统中安装必要的工具
 接下来是安装集群了，包括zookeeper、hadoop、spark.
 接下来的工作可能会用到如下命令：
@@ -24,6 +25,7 @@ $ apt install net-tools       # ifconfig
 $ apt install iputils-ping     # ping
 都安装好后，可以将此装好环境变量的镜像保存为一个副本，以后可以基于此副本构建其它镜像：容器的id就是我们刚才退出的那个容器，可以使用命令docker ps查看所有运行的容器的信息
 docker commit -m "wget vim net-tools iputils-ping install" 容器ID ubuntu:v1
+
 # 三、下载jdk、Zookeeper、 Hadoop、Spark、Scala
 下载集群资源
 我们计划将集群的 Zookeeper、Hadoop、Spark 安装到统一的目录 /root/soft/apache下。
@@ -566,25 +568,31 @@ $ sudo vim /etc/hosts
 172.17.0.3      slave1
 172.17.0.4      slave2
 
-到此所有配置安装基本完成了，下面开启你的Spark集群吧！！！
+# 开启你的Spark集群吧！！！
 
-(------------------
+(------------------备用选项
 启动master：
 
-    $  docker run -ti -h master -p 50070:50070 --name master ubuntu:spark
+
+
+
+
+
+
+    $  docker run --privileged -itd --name=master -h master ubuntu:spark /sbin/init 
     $ ./root/app/shell/run_master.sh
 
 启动slave1：
 
     启动 Slave1 节点
-    $ docker run -ti -h slave1 --name  slave1 ubuntu:spark
+    $ docker run --privileged -itd --name=slave1 -h slave1 ubuntu:spark /sbin/init
     运行 run_slave1.sh 启动脚本
     $ ./root/app/shell/run_slave1.sh
 
 启动slave2：
 
     启动 Slave2 节点
-    $ docker run -ti -h slave2 --name  slave2 ubuntu:spark
+    $ docker run --privileged -itd --name=slave2 -h slave2 ubuntu:spark /sbin/init
     运行 run_slave2.sh 启动脚本
     $ ./root/app/shell/run_slave2.sh
 
@@ -608,19 +616,20 @@ root@master:hdfs zkfc -formatZK
 root@master:start-dfs.sh
 
 访问hdfs的管理页面试试：
--------------------------------)
+
+备用选项------------------------------  )
 
 启动 Spark 集群
 
     启动 Master 节点
     
-    $ docker run -ti -h master --name master ubuntu:spark 
+    $ docker run --privileged -itd --name=master -h master ubuntu:spark /sbin/init 
     
     在这里先不要着急着运行 run_master.sh 启动脚本。等最后再运行
     
     启动 Slave1 节点
     
-    $ docker run -ti -h slave1 --name slave1 ubuntu:spark 
+    $ docker run --privileged -itd --name=slave1 -h slave1 ubuntu:spark /sbin/init 
     
     运行 run_slave1.sh 启动脚本
     
@@ -628,7 +637,7 @@ root@master:start-dfs.sh
     
     启动 Slave2 节点
     
-    $ docker run -ti -h slave2 --name slave2 ubuntu:spark 
+    $ docker run --privileged -itd --name=slave2 -h slave2 ubuntu:spark /sbin/init 
     
     运行 run_slave2.sh 启动脚本
     
@@ -798,6 +807,83 @@ Operation failed: End of File Exception between local host is: "master/172.17.0.
 
 
 
+
+
+
+
+## yarn运行模式详解
+
+[网址](http://spark.apache.org/docs/latest/running-on-yarn.html)
+
+```
+yarn
+	mapreduce yarn
+	spark on yarn 70%
+	spark作为客户端而已，他需要做的事情就是提交作业到yarn上去执行
+	yarn vs standalone
+		yarn： 你只需要一个节点，然后提交作业即可   这个是不需要spark集群的（不需要启动master和worker的）
+		standalone：你的spark集群上每个节点都需要部署spark，然后需要启动spark集群（需要master和worker）
+
+
+./spark-submit --master yarn --name spark-yarn /root/app/script/spark0402.py hdfs://master:9000/hello.txt hdfs://master:9000/wc/output
+
+When running with master 'yarn' either HADOOP_CONF_DIR or YARN_CONF_DIR must be set in the environment
+
+
+
+试想：为什么需要指定HADOOP_CONF_DIR或者YARN_CONF_DIR
+
+如何使得这个信息规避掉
+Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME
+
+yarn支持client和cluster模式：driver运行在哪里
+	client：提交作业的进程是不能停止的，否则作业就挂了
+	cluster：提交完作业，那么提交作业端就可以断开了，因为driver是运行在am里面的
+
+
+Error: Cluster deploy mode is not applicable to Spark shells
+
+	pyspark/spark-shell : 交互式运行程序  client
+	spark-sql
+
+如何查看已经运行完的yarn的日志信息： yarn logs -applicationId <applicationId>
+Log aggregation has not completed or is not enabled.
+参见：https://coding.imooc.com/class/chapter/128.html#Anchor  JobHistory使用
+
+
+不管你的spark应用程序运行在哪里，你的spark代码都是一样的，不需要做任何的修改和调整，所以spark使用起来是非常方便的！！！！！！
+```
+
+
+
++ 配置
+
+```
+cd $SPARK_HOME/conf
+cp spark-env.sh.template spark-env.sh
+vi spark-env.sh
+```
+
+```
+JAVA_HOME=/home/wxk/app/jdk1.8.0_152                           
+HADOOP_CONF_DIR=/root/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop 
+```
+
+![1570353192251](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1570353192251.png)
+
+> hadoop配置文件均在该文件`/home/jungle/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop`下
+
++ 提交
+
+  ```
+  spark-submit --master yarn --name spark-yarn /root/app/script/spark0402.py hdfs://master:9000/hello.txt hdfs://master:9000/wc/output
+  ```
+
+  
+
+
+
+
 # SparkSQL测试
 
 ```SPARQL
@@ -812,12 +898,21 @@ df.show()
 
 ==服务器上运行==
 
+Linux 系统默认没有安装 nc，可以用下面的方法安装：
+
+```javascript
+# centos
+yum install nc
+# ubuntu
+apt-get install netcat
+```
+
 ```
 nc -lk 9999
 容器上好像要用 nc -lp 9999
 ```
 
-![1570879560288](/home/wxk/PycharmProjects/wxk_pySpark/picture/1570879560288.png)
+![1570879560288](./picture/1570879560288.png)
 
 ```
 cd $SPARK_HOME
@@ -826,4 +921,741 @@ cd $SPARK_HOME
 
 > master:4040
 
-![1570879269887](/home/wxk/PycharmProjects/wxk_pySpark/picture/1570879269887.png)
+![1570879269887](./picture/1570879269887.png)
+
+
+
+
+
+#  Azkaban基础篇
+
+[参考网址]( https://azkaban.github.io/ )
+
+1. 
+
+   ```
+   Azkaban编译：万世开头难，务必要保证你的网络速度不错
+   	1） 去github上下载源码包
+   	2） ./gradlew build installDist
+   	3） 建议搭建先去下载gradle-4.1-all.zip 然后整合到azkaban源码中来，避免在编译的过程中去网络上下载，导致编译速度非常慢
+   	4） 编译成功之后，去对应的目录下找到对应模式的安装包即可
+   ```
+
+
+## 八、 Azkaban solo server环境部署
+
+```
+Azkaban环境搭建
+	1) 解压编译后的安装包到~/app
+	2）启动azkaban   $AZKABAN_HOME/bin/azkaban-solo-start.sh
+		验证：jps  AzkabanSingleServer
+		ip:8081(可以在azkaban.properties中修改)
+
+```
+
+---
+
+
+
+```
+cd /root/app/azkaban-3.43.0
+```
+
+```
+cd /root/app/azkaban-3.43.0/azkaban-solo-server-0.1.0-SNAPSHOT/conf
+vim azkaban-users.xml (在里面可以增加账户)
+
+cd /root/app/azkaban-solo-server-0.1.0-SNAPSHOT
+```
+
+```
+./bin/azkaban-solo-start.sh
+```
+
+==报错==
+
+> Cannot find 'database.properties' file
+
+ **<u>解决方案是：(最好的解决方法在bin的上级目录运行 bin/azkaban-solo-start.sh   不能进入bin里用sh,应为shell没写得好)</u>** 
+
+```
+cd conf
+```
+
+ 在azkaban.properties中增加一个配置
+database.sql.scripts.dir=/home/jungle/app/azkaban-solo-server-0.1.0-SNAPSHOT/sql
+注意，这个配置不能写/home/jungle/app/azkaban-solo-server-0.1.0-SNAPSHOT/sql/azkaban.properties，只能写到 sql ，然后问题就不存在了。 
+
+==报错==
+
+> conf/global.properties (No such file or directory)
+
+```
+vi azkaban.properties
+```
+
+![1570973789936](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1570973789936.png)
+
+```
+executor.global.properties=/home/jungle/app/azkaban-solo-server-0.1.0-SNAPSHOT/conf/global.properties
+```
+
+![1570973871089](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1570973871089.png)
+
+==报错==
+
+> java.lang.RuntimeException: java.lang.reflect.InvocationTargetException
+
+```
+cd conf
+vi azkaban.properties
+```
+
+ ![img](https://images2015.cnblogs.com/blog/855959/201707/855959-20170706000233628-684623914.png)  ![img](https://images2015.cnblogs.com/blog/855959/201707/855959-20170706000411550-673796908.png) 
+
+```
+jps
+```
+
+![1570974851274](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1570974851274.png)
+
+```
+UI:http://192.168.1.18:8081/
+```
+
+![1570975190784](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1570975190784.png)
+
+增加用户
+
+```
+vi azkaban-users.xml
+```
+
+```xml
+<user password="123456" roles="admin" username="wxk"/>
+```
+
+![1570975414346](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1570975414346.png)
+
+==注意==
+
+实在不行，就参考[官网](https://azkaban.readthedocs.io/en/latest/getStarted.html#installing-the-solo-server)的做法
+
+## 九、 Azkaban快速入门案例 
+
+[参考网址](https://azkaban.readthedocs.io/en/latest/createFlows.html#creating-flows)
+
+1. 创建工程  
+
+
+
+  创建一个Job
+
+```
+# vim foo.job
+type=command
+command=echo "Hello World"
+```
+
+```shell
+打成zip包
+zip -r foo.zip foo.job
+
+```
+
+
+
+[参考网址](https://azkaban.readthedocs.io/en/latest/useAzkaban.html#create-projects)
+
+![1571062492992](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571062492992.png)
+
+![1571062544787](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571062544787.png)
+
+---
+
+2. [创建流](https://azkaban.readthedocs.io/en/latest/createFlows.html#creating-flows)
+
+   ### Step 1:
+
+   Create a simple file called `flow20.project`. Add `azkaban-flow-version` to indicate this is a Flow 2.0 Azkaban project:
+
+   ```
+   azkaban-flow-version: 2.0
+   ```
+
+   ### Step 2:
+
+   Create another file called `basic.flow`. Add a section called `nodes`, which will contain all the jobs you want to run. You need to specify `name` and `type` for all the jobs. Most jobs will require the `config` section as well. We will talk more about it later. Below is a simple example of a command job.
+
+   ```
+   nodes:
+     - name: jobA
+       type: command
+       config:
+         command: echo "This is an echoed text."
+   ```
+
+   ### Step 3:
+
+   Select the two files you’ve already created and right click to compress them into a zip file called `Archive.zip`. You can also create a new directory with these two files and then `cd` into the new directory and compress: `zip -r Archive.zip .` Please do not zip the new directory directly.
+
+   Make sure you have already created a project on Azkaban ( See [Create Projects](https://azkaban.readthedocs.io/en/latest/useAzkaban.html#createprojects) ). You can then upload Archive.zip to your project through Web UI ( See [Upload Projects](https://azkaban.readthedocs.io/en/latest/useAzkaban.html#uploadprojects) ).
+
+   Now you can click `Execute Flow` to test your first Flow 2.0 Azkaban project!
+
+3. [上传流](https://azkaban.readthedocs.io/en/latest/useAzkaban.html#upload-projects)
+
+   ![1571062926625](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571062926625.png)
+
+Click on the **Upload** button. You will see the following dialog.
+
+ ![1571126240522](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571126240522.png)
+
+Azkaban will validate the contents of the zip to make sure that dependencies are met and that there’s no cyclical dependencies detected. If it finds any invalid flows, the upload will fail.
+
+Uploads overwrite all files in the project. Any changes made to jobs will be wiped out after a new zip file is uploaded.
+
+After a successful upload, you should see all of your flows listed on the screen.
+
+# 第11部分 Azkaban相关使用
+
+##  一、依赖作业在Azkaban中的使用 
+
+[参考网址](https://azkaban.readthedocs.io/en/latest/createFlows.html#job-dependencies)
+
+Jobs can have dependencies on each other. You can use `dependsOn` section to list all the parent jobs. In the below example, after jobA and jobB run successfully, jobC will start to run.
+
+```
+nodes:
+  - name: jobC
+    type: noop
+    # jobC depends on jobA and jobB
+    dependsOn:
+      - jobA
+      - jobB
+
+  - name: jobA
+    type: command
+    config:
+      command: echo "This is an echoed text."
+
+  - name: jobB
+    type: command
+    config:
+      command: pwd
+```
+
+You can zip the new `basic.flow` and `flow20.project` again and then upload to Azkaban. Try to execute the flow and see the difference.
+
+1. 新建依赖项目
+
+   ```
+   # vim bar.job
+   type=command
+   dependencies=foo
+   command=echo bar
+   ```
+
+   ```shell
+   zip -r dependencies.zip foo.job bar.job
+   ```
+
+   
+
+   
+
+   
+
+   ![1571127139290](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571127139290.png)
+
+2. 上传zip包
+
+   ![1571127289506](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571127289506.png)
+
+## 二、 HDFS作业在Azkaban中的使用 
+
+```
+hadoop fs -mkdir /azkaban1
+hadoop fs -mkdir /azkaban2
+hadoop fs -ls /
+```
+
+![1571127789177](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571127789177.png)
+
+1. job
+
+   --hadoop.flow
+
+   ```
+   nodes:
+     - name: jobA
+       type: command
+       # jobC depends on jobA and jobB
+       config:
+         command: /home/jungle/app/hadoop-2.6.0-cdh5.7.0/bin/hadoop fs -ls /
+   
+   ```
+
+2. 新建项目
+
+   ![1571128130255](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571128130255.png)
+
+3. 上传zip包
+
+   ![1571128358330](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571128358330.png)
+
+4. 运行结果
+
+   ![1571128491147](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571128491147.png)
+
+## 三、 MapReduce作业在Azkaban中的使用 
+
+--mr_pi.flow
+
+```
+nodes:
+  - name: jobA
+    type: command
+    config:
+      command: hadoop jar /home/jungle/app/hadoop-2.6.0-cdh5.7.0/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.6.0-cdh5.7.0.jar pi 2 3
+
+```
+
+--mr_wc.flow
+
+```
+nodes:
+  - name: jobA
+    type: command
+    config:
+    # /hello.txt /az/wc是hdfs上的目录
+      command: hadoop jar /home/jungle/app/hadoop-2.6.0-cdh5.7.0/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.6.0-cdh5.7.0.jar wordcount /hello.txt /az/wc
+
+```
+
+==在线修改==
+
+![1571130094586](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571130094586.png)
+
+![1571130116335](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571130116335.png)
+
+> 也可以通过web界面查看： http://192.168.1.18:8088/cluster 
+
+## 四、 Hive作业在Azkaban中的使用 
+
+1. 启动hive
+
+   ```
+   hive
+   ```
+
+   ![1571130642544](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571130642544.png)
+
+   ```
+   create table emp(
+   empno int, ename string, job string,
+   mgr int, hiredate string, sal double,
+   comm double, deptno int
+   )row format delimited fields terminated by '\t';
+   ```
+
+![1571131142612](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571131142612.png)
+
+```
+# 加载数据到表
+load data local inpath '/home/jungle/data/emp.txt' overwrite into table emp
+```
+
+
+
+```
+select * from emp;
+```
+
+![1571131328171](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571131328171.png)
+
+```
+select deptno,count(1) from emp group by deptno;
+```
+
+![1571136782946](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571136782946.png)
+
+---
+
++ azkaban上执行hive指令
+
+  ==方法一==
+
+```
+vi test.sql
+```
+
+```
+select deptno,count(1) from emp group by deptno;
+```
+
+![1571136811983](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571136811983.png)
+
+--hive.flow
+
+```
+nodes:
+  - name: jobA
+    type: command
+    config:
+      command: hive -f /home/jungle/sql/test.sql
+
+```
+
+==方法二==
+
+--hive.flow
+
+```
+nodes:
+  - name: jobA
+    type: command
+    config:
+      command: hive -f "test.sql"
+```
+
+> 把test.sql也打入zip包
+
+![1571137463903](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571137463903.png)
+
+
+
+## 五、 定时调度作业在Azkaban中的使用 
+
+### 1.启动定时任务
+
+![1571140449340](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571140449340.png)
+
+![1571140528715](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571140528715.png)
+
+![1571140564369](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571140564369.png)
+
+### 2.删除定时任务
+
+![1571140627894](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571140627894.png)
+
+## 六、 邮件告警及SLA在Azkaban中的使用 
+
+[参考网址](https://azkaban.readthedocs.io/en/latest/useAzkaban.html#email-overrides)
+
+![1571141771248](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571141771248.png)
+
+```
+cd /home/jungle/source/azkaban/azkaban-solo-server/build/install/azkaban-solo-server/conf
+```
+
+```
+vi azkaban.properties
+```
+
+![1571142364373](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571142364373.png)
+
++ SLA
+
+```
+SLA：Service-Level Agreement的缩写，意思是服务等级协议。
+SLA：某个作业必须要在某个时间范围内要执行完成
+	互联网公司
+	99.99% 
+	99.999%
+	99.9%
+```
+
+![1571141805114](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571141805114.png)
+
+![1571141851836](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571141851836.png)
+
+
+
+# 容器安装MariaDB
+
+​	eytool -keystore keystore -alias jetty -genkey -keyalg RSAeytool -keystore keystore -alias jetty -genkey -keyalg RSA这里有个大坑：出现（ERROR 2002 (HY000): Can’t connect to local MySQL server through socket  ‘/var/run/mysqld/mysqld.sock’ (2 “No such file or directory”)）
+
+解决方法:应为容器内mysql服务没有启动，容器无法执行systemctl命令，无法启动，所以要给容器提权添加 --privileged 参数，并将 cmd 或者 entrypoint 设置为 /usr/sbin/init
+
+```docker run --privileged -itd --name=master  8f82d6c713aa /sbin/init 
+docker run --privileged -itd --name=master -h master ubuntu:spark /sbin/init 
+docker run --privileged -itd --name=slave1 -h slave1 ubuntu:spark /sbin/init
+
+docker run --privileged -itd --name=slave2 -h slave2 ubuntu:spark /sbin/init
+
+
+```
+
+
+
+MariaDB 是一个开源的关系型数据库管理系统，向后兼容，可替代 MySQL。本文将会讲解如何在 Ubuntu 20.04 上安装和维护 MariaDB。
+
+## 一、前提条件
+
+你需要拥有 Ubuntu 服务器的管理权限，或者以 root 身份 或者以拥有 sudo 权限的用户身份登录系统。
+
+Ubuntu 软件源仓库中的 MariaDB 最新版是 10.3，可以运行下面的命令进行安装：
+
+```
+sudo apt update
+sudo apt install mariadb-server
+```
+
+安装完成后 ，MariaDB 服务将会自动启动。输入以下命令验证数据库服务器是否正在运行：
+
+```
+sudo systemctl status mariadb
+```
+
+输出结果将会显示服务已经启用，并且正在运行：
+
+```
+...
+```
+
+假如没在运行：
+
+systemctl start mariadb
+systemctl enable mariadb
+
+## 三、维护 MariaDB
+
+MariaDB 服务器有一个脚本叫做`mysql_secure_installation`，通过它你可以很容易提高数据库服务器的安全性。
+不带参数运行脚本：
+
+```
+sudo mysql_secure_installation
+```
+
+根据脚本提示输入 root 密码：
+
+```
+Enter current password for root (enter for none):
+```
+
+由于没有设置 root 密码，所以这里仅仅输入回车"Enter"即可。
+接下来，会提示是否为 MySQL root 用户设置密码：
+
+```
+Set root password? [Y/n] n
+```
+
+输入`n`。在 Ubuntu 上， MariaDB 用户默认使用`auth_socket`进行鉴权。这个插件会检查启动客户端的本地系统用户是否和指定的 MariaDB 用户名相匹配。
+下一步，系统会要求移除匿名用户，限制 root 用户访问本地机器，移除测试数据库，并且重新加载权限表。如下所示，你只需要输入`Y`：
+
+```
+Remove anonymous users? [Y/n] Y
+Disallow root login remotely? [Y/n] Y
+Remove test database and access to it? [Y/n] Y
+Reload privilege tables now? [Y/n] Y
+```
+
+
+
+## 四、以 root 身份登录
+
+如果想要在终端命令行和 MariaDB 服务器进行交互，可以使用`mysql`客户端工具或者`mariadb`。这个工具被作为 MariaDB 服务器软件包的依赖软件被安装。
+这个`auth_socket`插件将会通过 Unix socket 文件验证用户来连接`localhost`。这就意味着你不能通过提供密码来验证 root。
+想要以 root 用户名登录 MariaDB 服务器，需要输入以下命令：
+
+```
+sudo mysql
+```
+
+执行成功后会展示 MariaDB shell，如下所示：
+
+```
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 61
+Server version: 10.3.22-MariaDB-1ubuntu1 Ubuntu 20.04
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+MariaDB [(none)]> Bye
+```
+
+如果想使用第三方程序（例如 phpMyAdmin），以 root 身份登录你的 MariaDB 服务器，有以下两种方式可以选择。
+第一个是将鉴权方法从`auth_socket`修改为`mysql_native_password`。你可以通过运行下面的命令实现：
+
+```
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'very_strong_password';
+FLUSH PRIVILEGES;
+```
+
+第二个推荐的方式就是创建一个管理员用户，可以访问所有的数据库：
+
+```
+GRANT ALL PRIVILEGES ON *.* TO 'wxk'@'localhost' IDENTIFIED BY '123456';
+```
+
+
+
+
+
+
+
+# 第12部分 Azkaban进阶
+
+##  一、Multi Executor Serve
+
+[参考网址](https://azkaban.readthedocs.io/en/latest/getStarted.html#getting-started-with-the-multi-executor-server)
+
+### 1.[Database setup](https://azkaban.readthedocs.io/en/latest/getStarted.html#database-setup)
+
+```
+# 进入mysql
+mysql -uroot -p -h192.168.1.18 -P9906
+```
+
+```
+# 建库
+ CREATE DATABASE azkaban;
+ 
+```
+
+```
+# 创建用户
+ CREATE USER 'azkaban'@'%' IDENTIFIED BY 'azkaban';
+```
+
+```
+# 为用户赋予权限
+GRANT SELECT,INSERT,UPDATE,DELETE ON azkaban.* to 'azkaban'@'%' WITH GRANT OPTION;
+```
+
+```
+# 刷新权限
+flush privileges;
+```
+
++ Create the Azkaban Tables 
+
+  ```
+  cd /root/app/azkaban-3.43.0/azkaban-db-0.1.0-SNAPSHOT
+  ll
+  ```
+
+  ![image-20191026210004647](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191026210004647.png)
+
+  数据库导入sql语句
+
+  ```
+  use azkaban;
+  
+  ```
+
+source /root/app/azkaban-3.43.0/azkaban-db-0.1.0-SNAPSHOT/create-all-sql-0.1.0-SNAPSHOT.sql
+
+
+
+![image-20191026210033558](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191026210033558.png)
+
+  ```
+show tables;
+  ```
+
+  ![image-20191026210402288](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191026210402288.png)
+
+(5)生成ssl
+
+  ```
+cd ~/app
+[root@node1 ~]# keytool -keystore keystore -alias jetty -genkey -keyalg RSA
+注:密码和最后确认需要输入，其他默认即可。
+  ```
+
+(6)设置web‐server
+
+拷贝conf目录和log4j.properties
+
+```
+[root@node1 ~]# cp -r ~/app/azkaban-3.43.0/azkaban-solo-server-0.1.0-SNAPSHOT/conf  ~/app/azkaban-3.43.0/azkaban-web-server-0.1.0-SNAPSHOT/
+[root@node1 ~]# find ~/app/azkaban-3.43.0 -name 'log4j*'
+
+[root@node1 ~]# vim ~/app/azkaban-3.43.0/azkaban-web-server-0.1.0-SNAPSHOT/conf/azkaban.properties
+#需要修改的地方
+default.timezone.id=Asia/Shanghai
+#database.type=h2
+#h2.path=./h2
+#h2.create.tables=true
+database.type=mysql
+mysql.port=3306
+mysql.host=localhost
+mysql.database=azkaban
+mysql.user=azkaban
+mysql.password=azkaban
+jetty.use.ssl=true
+jetty.ssl.port=8443
+mysql.numconnections=100
+jetty.keystore=/root/app/keystore #keytool生成的keystore路径
+jetty.password=123456 #keytool中设置的密码
+jetty.keypassword=123456
+jetty.truststore=/root/app/keystore
+jetty.trustpassword=123456
+
+```
+
+(7)启动web-serrver并验证
+
+```
+[root@node1 ~]# cd ~/app/azkaban-3.43.0/azkaban-web-server-0.1.0-SNAPSHOT/
+[root@node1 azkaban-web-server-0.1.0-SNAPSHOT]# bin/azkaban-web-start.sh
+
+添加azkaban.native.lib=false 和 execute.as.user=false属性
+cd ~/app/azkaban-3.43.0/azkaban-web-server-0.1.0-SNAPSHOT/
+[root@node1 azkaban-web-server-0.1.0-SNAPSHOT]# mkdir -p plugins/jobtypes
+cd plugins/jobtypes
+[root@node1 jobtypes]# vim commonprivate.properties azkaban.native.lib=false
+execute.as.user=false
+
+验证:
+    jps=>AzkabanWebServer
+    webUI=>http://node1:8081/index
+出现  Exit with error: ./bin/../conf/log4j.properties file doesn't exist.
+
+解决办法：新建一个配置文件log4j.properties，
+如：
+vim  ~/app/azkaban-3.43.0/azkaban-web-server-0.1.0-SNAPSHOT/conf/log4j.properties
+
+log4j.rootLogger=INFO,C
+log4j.appender.C=org.apache.log4j.ConsoleAppender
+log4j.appender.C.layout=org.apache.log4j.PatternLayout
+log4j.appender.C.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n
+
+```
+
+(8)从web-server拷贝conf目录、plugins目录并启动executor‐server
+
+```
+[root@node1 ~]# cd ~/app/azkaban-3.43.0/azkaban-exec-server-0.1.0-SNAPSHOT/
+[root@node1 azkaban-exec-server-0.1.0-SNAPSHOT]# cp -r ~/app/azkaban-3.43.0/azkaban-web-server-0.1.0-SNAPSHOT/conf  ~/app/azkaban-3.43.0/azkaban-exec-server-0.1.0-SNAPSHOT/
+
+cd ~/app/azkaban-3.43.0/azkaban-exec-server-0.1.0-SNAPSHOT/
+cp -r ~/app/azkaban-3.43.0/azkaban-web-server-0.1.0-SNAPSHOT/plugins/ .
+
+[root@node1 azkaban-exec-server-0.1.0-SNAPSHOT]# bin/azkaban-executor-start.sh
+
+```
+
+
+
+azkaban运行dependency出现错误azkaban.utils.UndefinedPropertyException: Missing required property 'azkaban.native.lib'
+
+```
+添加azkaban.native.lib=false 和 execute.as.user=false属性
+cd ~/app/azkaban-3.43.0/azkaban-web-server-0.1.0-SNAPSHOT/
+[root@node1 azkaban-web-server-0.1.0-SNAPSHOT]# mkdir -p plugins/jobtypes
+cd plugins/jobtypes
+[root@node1 jobtypes]# vim commonprivate.properties azkaban.native.lib=false
+execute.as.user=false
+
+cd ~/app/azkaban-3.43.0/azkaban-exec-server-0.1.0-SNAPSHOT/
+cp -r ~/app/azkaban-3.43.0/azkaban-web-server-0.1.0-SNAPSHOT/plugins/ .
+
+
+```
+
+
+```
+
+```
