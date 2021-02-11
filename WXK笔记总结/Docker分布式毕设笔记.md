@@ -388,9 +388,11 @@ vim ~/.bashrc
 $ source ~/.bashrc
 
 此过程可能会报错:
-Missing privilege separation directory: /var/run/sshd 需要自己创建这个目录
+Missing privilege separation directory: /run/sshd 需要自己创建这个目录
 
-$ mkdir /var/run/sshd
+$ mkdir /run/sshd
+
+/usr/sbin/sshd
 
 生成访问密钥
 
@@ -532,7 +534,6 @@ $ vim stop_master.sh
 
 添加如下信息：
 
-
 #!/bin/bash
 zkServer.sh stop
 hadoop-daemons.sh stop journalnode
@@ -579,20 +580,20 @@ $ sudo vim /etc/hosts
 
 
 
-    $  docker run --privileged -itd --name=master -h master ubuntu:spark /sbin/init 
+    $  docker run --privileged -itd --name=master -h master ubuntu:spark /usr/sbin/init 
     $ ./root/app/shell/run_master.sh
 
 启动slave1：
 
     启动 Slave1 节点
-    $ docker run --privileged -itd --name=slave1 -h slave1 ubuntu:spark /sbin/init
+    $ docker run --privileged -itd --name=slave1 -h slave1 ubuntu:spark /usr/sbin/init
     运行 run_slave1.sh 启动脚本
     $ ./root/app/shell/run_slave1.sh
 
 启动slave2：
 
     启动 Slave2 节点
-    $ docker run --privileged -itd --name=slave2 -h slave2 ubuntu:spark /sbin/init
+    $ docker run --privileged -itd --name=slave2 -h slave2 ubuntu:spark /usr/sbin/init
     运行 run_slave2.sh 启动脚本
     $ ./root/app/shell/run_slave2.sh
 
@@ -623,13 +624,13 @@ root@master:start-dfs.sh
 
     启动 Master 节点
     
-    $ docker run --privileged -itd --name=master -h master ubuntu:spark /sbin/init 
+    $ docker run --privileged -itd --name=master -h master ubuntu:spark /usr/sbin/init 
     
     在这里先不要着急着运行 run_master.sh 启动脚本。等最后再运行
     
     启动 Slave1 节点
     
-    $ docker run --privileged -itd --name=slave1 -h slave1 ubuntu:spark /sbin/init 
+    $ docker run --privileged -itd --name=slave1 -h slave1 ubuntu:spark /usr/sbin/init 
     
     运行 run_slave1.sh 启动脚本
     
@@ -637,7 +638,7 @@ root@master:start-dfs.sh
     
     启动 Slave2 节点
     
-    $ docker run --privileged -itd --name=slave2 -h slave2 ubuntu:spark /sbin/init 
+    $ docker run --privileged -itd --name=slave2 -h slave2 ubuntu:spark /usr/sbin/init 
     
     运行 run_slave2.sh 启动脚本
     
@@ -804,6 +805,12 @@ Operation failed: End of File Exception between local host is: "master/172.17.0.
     172.17.0.4      slave2
 
  
+
+
+
+
+
+
 
 
 
@@ -1378,11 +1385,15 @@ SLA：某个作业必须要在某个时间范围内要执行完成
 
 解决方法:应为容器内mysql服务没有启动，容器无法执行systemctl命令，无法启动，所以要给容器提权添加 --privileged 参数，并将 cmd 或者 entrypoint 设置为 /usr/sbin/init
 
-```docker run --privileged -itd --name=master  8f82d6c713aa /sbin/init 
-docker run --privileged -itd --name=master -h master ubuntu:spark /sbin/init 
-docker run --privileged -itd --name=slave1 -h slave1 ubuntu:spark /sbin/init
+```shell
+docker run --privileged -itd --name=master -h master ubuntu:spark /usr/sbin/init 
+docker run --privileged -itd --name=slave1 -h slave1 ubuntu:spark /usr/sbin/init
 
-docker run --privileged -itd --name=slave2 -h slave2 ubuntu:spark /sbin/init
+docker run --privileged -itd --name=slave2 -h slave2 ubuntu:spark /usr/sbin/init
+docker run --privileged -itd --name=test -h test ubuntu:spark /usr/sbin/init
+
+cat /var/log/mysql/error.log   查看mysql错误日志
+
 
 
 ```
@@ -1656,6 +1667,162 @@ cp -r ~/app/azkaban-3.43.0/azkaban-web-server-0.1.0-SNAPSHOT/plugins/ .
 ```
 
 
+
+
+
+## 九、 ES部署及使用 
+
+```
+tar -zxvf elasticsearch-6.3.0-linux-x86_64.tar.gz -C ~/app/
 ```
 
 ```
+vim ~/app/elasticsearch-6.3.0/config/elasticsearch.yml
+cd /root/app/elasticsearch-6.3.0/bin
+```
+
+
+
+```
+bootstrap.system_call_filter: false
+network.host: 0.0.0.0 
+```
+
+![image-20191030203011087](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191030203011087.png)
+
+启动
+
+
+
+```
+chown -R root:root elasticsearch-6.3.0/
+chmod 770 elasticsearch-6.3.0/
+cd bin
+./elasticsearch
+
+elasticsearch错误指南：https://blog.csdn.net/u013641234/article/details/80792416
+
+以root身份运行将会出现以下问题
+
+root@yxjay:/opt/elasticsearch-2.3.5/bin# ./elasticsearch
+Exception in thread "main" java.lang.RuntimeException: don't run elasticsearch as root.
+解决办法ela5以上版本只能用非root用户运行了
+ela5以下版本解决办法 :
+
+```
+
+---
+
+**解决方法1：**
+
+在执行elasticSearch时加上参数-Des.insecure.allow.root=true，完整命令如下
+
+```crystal
+./elasticsearch -Des.insecure.allow.root=true
+```
+
+**解决办法2：**
+
+
+
+用vi打开elasicsearch执行文件，在变量ES_JAVA_OPTS使用前添加以下命令
+
+```ini
+ES_JAVA_OPTS="-Des.insecure.allow.root=true"
+```
+
+如下图所示，这个方法的好处是以后不用添加参数就能以root身份执行了 
+
+
+
+![img](https://img-blog.csdn.net/20160814192639768)
+
+参考出处：http://stackoverflow.com/questions/34920801/how-to-run-elasticsearch-2-1-1-as-root-user-in-linux-machine
+
+
+
+[elasticsearch下载]( https://www.elastic.co/cn/downloads/ )
+
+
+
+创建索引库
+
+```
+curl -XPUT 'http://master:9200/imooc_es'
+```
+
+![image-20191102191324933](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191102191324933.png)
+
+```
+curl -XGET 'http://master:9200/_search'
+```
+
+![image-20191102191546915](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191102191546915.png)
+
+```
+curl -XPOST 'http://master:9200/imooc_es/student/1' -H 'Content-Type: application/json' -d '{
+"name":"imooc",
+"age":5,
+"interests":["Spark","Hadoop"]	
+}'
+```
+
+![image-20191102195455208](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191102195455208.png)
+
+```
+curl -XGET 'http://master:9200/_search?pretty'
+```
+
+![image-20191102195626069](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191102195626069.png)
+
+---
+
+## 
+
+## 十、 Kibana部署及使用 
+
+[下载地址](  https://www.elastic.co/cn/downloads/past-releases/kibana-5-2-2  )
+
+```
+wget https://artifacts.elastic.co/downloads/kibana/kibana-5.2.2-linux-x86_64.tar.gz
+```
+
+```
+tar -zxvf kibana-5.2.2-linux-x86_64.tar.gz -C ~/app/
+```
+
+```
+cd config/
+```
+
+```
+vim kibana.yml
+```
+
+```
+server.port: 5601
+server.host: "0.0.0.0"
+elasticsearch.url: "http://master:9200"
+```
+
+启动
+
+```
+bin/kibana
+```
+
+ui界面
+
+```
+http://192.168.1.18:5601
+```
+
+![image-20191102231557919](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191102231557919.png)
+
+![image-20191102231645176](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191102231645176.png)
+
+![image-20191102231732808](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191102231732808.png)
+
+---
+
+## 

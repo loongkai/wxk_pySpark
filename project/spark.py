@@ -47,7 +47,7 @@ if __name__ == '__main__':
     group2017 = data2017.withColumn("Grade",grade_function_udf(data2017['Value'])).groupBy("Grade").count()
     group2016 = data2016.withColumn("Grade",grade_function_udf(data2016['Value'])).groupBy("Grade").count()
     group2015 = data2015.withColumn("Grade",grade_function_udf(data2015['Value'])).groupBy("Grade").count()
-
+# 求比值
     group2015.select("Grade", "count", group2015['count'] / data2015.count()).show()
     group2016.select("Grade", "count", group2016['count'] / data2016.count()).show()
     group2017.select("Grade", "count", group2017['count'] / data2017.count()).show()
