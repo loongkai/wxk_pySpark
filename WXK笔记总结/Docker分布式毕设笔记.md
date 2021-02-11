@@ -1,12 +1,188 @@
 Docker 是一个开源的应用容器引擎，让开发者可以打包他们的应用以及依赖包到一个可移植的容器中，然后发布到任何流行的 Linux 机器上，也可以实现虚拟化。容器是完全使用沙箱机制，相互之间不会有任何接口。
 
+
+
+# Ubuntu20.04 LTS国内源安装指定版本Docker/docker-compose
+
+
+
+# 1.卸载旧版本Docker
+
+
+
+```
+#卸载旧版本docker
+sudo apt-get remove docker docker-engine docker-ce docker.io	
+
+#清空旧版docker占用的内存
+sudo apt-get remove --auto-remove docker
+
+#更新系统源
+sudo apt-get update
+```
+
+# 2.配置安装环境
+
+
+
+```
+sudo apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+```
+
+# 3. 添加阿里云的docker GPG密钥
+
+
+
+```
+curl -fsSL http://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
+```
+
+# 4. 添加阿里镜像源
+
+
+
+```
+sudo add-apt-repository "deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+
+#更新
+sudo apt-get update
+```
+
+# 5. 查看有哪些版本
+
+
+
+```
+apt-cache madison docker-ce
+```
+
+[![在这里插入图片描述](https://img-blog.csdnimg.cn/20200613220949677.png)](https://img-blog.csdnimg.cn/20200613220949677.png)
+
+# 6. 安装最新版/指定版本
+
+
+
+```
+#安装最新版
+sudo apt-get install -y docker-ce
+
+#安装5:19.03.6~3-0~ubuntu-bionic版
+sudo apt-get install -y docker-ce=5:19.03.6~3-0~ubuntu-bionic
+```
+
+# 7. 重启Docker
+
+
+
+```
+sudo service docker restart
+#或者
+sudo systemctl restart docker
+```
+
+# 8. 查看Docke版本
+
+
+
+```
+sudo docker version
+```
+
+# 9. 配置阿里容器镜像加速器
+
+[![在这里插入图片描述](https://img-blog.csdnimg.cn/20200613205549846.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0NkcmVhbWZseQ==,size_16,color_FFFFFF,t_70)](https://img-blog.csdnimg.cn/20200613205549846.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0NkcmVhbWZseQ==,size_16,color_FFFFFF,t_70)
+
+- 针对Docker客户端版本大于 1.10.0 的用户
+- 您可以通过修改daemon配置文件/etc/docker/daemon.json来使用加速器
+
+
+
+```
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json <<-'EOF'
+{
+  "registry-mirrors": ["https://7ixh250y.mirror.aliyuncs.com"]
+}
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+# 10. 运行hello-world验证docker-ce是否安装成功
+
+
+
+```
+sudo docker run hello-world
+```
+
+- 安装成功显示：
+   [![在这里插入图片描述](https://img-blog.csdnimg.cn/20200613211502144.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0NkcmVhbWZseQ==,size_16,color_FFFFFF,t_70)](https://img-blog.csdnimg.cn/20200613211502144.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0NkcmVhbWZseQ==,size_16,color_FFFFFF,t_70)
+
+# 11. 安装docker-compose
+
+- 安装pip
+
+
+
+```
+sudo apt install python3-pip
+```
+
+- 更新一下库
+
+
+
+```
+sudo apt-get update
+```
+
+- 更新一下pip
+
+
+
+```
+sudo pip3 install --upgrade pip
+```
+
+- 安装docker-compose
+
+
+
+```
+sudo pip3 install docker-compose
+```
+
+- 如果出错
+   [![在这里插入图片描述](https://img-blog.csdnimg.cn/2020061322045958.png)](https://img-blog.csdnimg.cn/2020061322045958.png)
+- 就更新一下 six
+
+
+
+```
+pip3 install six --user -U
+```
+
+- 查看docker-compose版本
+
+
+
+```
+docker-compose --version
+```
+
+[![在这里插入图片描述](https://img-blog.csdnimg.cn/20200613220759470.png)](https://img-blog.csdnimg.cn/20200613220759470.png)
+
+
+
 # 一、在Docker中安装ubuntu系统
+
 下载ubuntu系统，默认是最新的
 docker pull ubuntu
 使用docker images命令可以查看下载的镜像：
 
 #运行最后一个镜像
-docker run -ti ubuntu:15.10   
+docker run  -it --name=master -h master ubuntu:l   
 #运行第一个镜像
 docker run -ti ubuntu:sparkmysql_secure_installation
 注意：进入容器之后，想要容器后台运行而不结束容器，可以使用Crl+P+Q退出
@@ -20,26 +196,66 @@ vim 用于编辑文件
 所以我们在这里可以先进行安装这些工具:
 $ apt update
 $ apt install wget
+
+apt install sudo
+
+apt-get install netcat
+
 $ apt install vim
 $ apt install net-tools       # ifconfig 
 $ apt install iputils-ping     # ping
 都安装好后，可以将此装好环境变量的镜像保存为一个副本，以后可以基于此副本构建其它镜像：容器的id就是我们刚才退出的那个容器，可以使用命令docker ps查看所有运行的容器的信息
-docker commit -m "wget vim net-tools iputils-ping install" 容器ID ubuntu:v1
+docker commit -m "wget vim net-tools iputils-ping install" 容器ID ubuntu:spark
 
 # 三、下载jdk、Zookeeper、 Hadoop、Spark、Scala
 下载集群资源
 我们计划将集群的 Zookeeper、Hadoop、Spark 安装到统一的目录 /root/soft/apache下。
 所以在这里我们要先构建这个目录：
+
+useradd -m username
+
+sudo passwd wxk 
+
+  123456
+
+
+
+sudo vim /etc/sudoers
+
+添加管理员权限
+
+1.到下面一行，在root下面添加一行，如下所示
+
+![img](https://img-blog.csdn.net/2018080417503010?watermark/2/text/aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM3MDQyNzg5/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70)
+
+2.wxk用户就可以执行所有的命令了。如图所示
+
+![img](https://img-blog.csdn.net/20180804181659773?watermark/2/text/aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM3MDQyNzg5/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70)
+
+## 
+
 $ cd ~/
 $ mkdir app
-$ maker software
+$ mkdir software
 $ mkdir source
 $ mkdir maven_repository
 $ mkdir script
 
+mkdir shell
+
 或者 用cp命令
 
-docker cp /home/wxk/app cf28ae654efb:/root/
+docker cp /home/wxk/app master:/home/wxk/
+
+docker cp /home/wxk/script master:/home/wxk/
+
+docker cp /home/wxk/app/data master:/home/wxk/
+
+
+
+### docker exec -it -u wxk master /bin/bash   (使用指定用户进入容器)
+
+
 
 # 四、安装、配置Zookeeper、 Hadoop、Spark、Scala 。python java
 
@@ -48,7 +264,7 @@ tar -zxvf jdk-8u231-linux-x64.tar.gz  -C ~/app/
 
 配置环境变量
 vim ~/.bashrc (ubuntu vim ~/.bashrc)
-export JAVA_HOME=/root/app/jdk1.8.0_231
+export JAVA_HOME=/home/wxk/app/jdk1.8.0_231
 export PATH=$JAVA_HOME/bin:$PATH
 source ~/.bashrc(ubuntu source ~/.profile)
 
@@ -57,15 +273,16 @@ source ~/.bashrc(ubuntu source ~/.profile)
 tar -zxvf scala-2.11.8.tgz  -C ~/app
 配置环境变量
 vim ~/.bashrc
-export SCALA_HOME=/root/app/scala-2.11.8
+export SCALA_HOME=/home/wxk/app/scala-2.11.8
 export PATH=$SCALA_HOME/bin:$PATH
 source ~/.bashrc
 
-                                    maven3.3.9
+## maven3.3.9
+
 tar -zxvf apache-maven-3.3.9-bin.tar.gz -C ~/app/
 配置环境变量
 vim ~/.bashrc
-export MAVEN_HOME=/root/app/apache-maven-3.3.9
+export MAVEN_HOME=/home/wxk/app/apache-maven-3.3.9
 export PATH=$MAVEN_HOME/bin:$PATH
 source ~/.bashrc
 
@@ -86,7 +303,8 @@ vim $MAVEN_HOME/conf/settings.xml
       </mirror> 
 </mirrors>
 
-                                                       安装python3.6.5
+## 安装python3.6.5
+
 cd ~/software/
 wget https://www.python.org/ftp/python/3.6.5/Python-3.6.5.tgz
 tar -zxvf Python-3.6.5.tgz
@@ -97,26 +315,25 @@ yum -y install zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel r
 
 cd Python-3.6.5/
 
-./configure --prefix=/root/app/python3
+./configure --prefix=/home/wxk/app/python3
 
 make && make install
 
-cd /root/app/python3/bin
+cd /home/wxk/app/python3/bin
 pwd
 --配置环境变量
 vi ~/.bashrc
-export PATH=/root/app/python3/bin:$PATH
+export PATH=/home/wxk/app/python3/bin:$PATH
 source ~/.bashrc
 
 
 
-
-安装 Zookeeper
+## 安装 Zookeeper
 下载 zookeeper
 
 然后到这里下载 zookeeper 到 /root/software 目录下, 我这里下载的是 zookeeper-3.4.9
 
-    $ cd /root/software
+    $ cd /home/wxk/software
     $	wget http://archive.apache.org/dist/zookeeper/zookeeper-3.4.9/zookeeper-3.4.9.tar.gz
 
 
@@ -126,7 +343,7 @@ tar -zxvf zookeeper-3.4.9.tar.gz -C ~/app
 修改 ~/.bashrc, 配置 zookeeper 环境变量
 
     $ vim ~/.bashrc 
-       export ZOOKEEPER_HOME=/root/app/zookeeper-3.4.9
+       export ZOOKEEPER_HOME=/home/wxk/app/zookeeper-3.4.9
        export PATH=$PATH:$ZOOKEEPER_HOME/bin
 $ source ~/.bashrc #使环境变量生效
 
@@ -137,7 +354,7 @@ vim zoo.cfg
 
 修改如下信息：
 
-    dataDir=/root/app/zookeeper-3.4.9/tmp
+    dataDir=/home/wxk/app/zookeeper-3.4.9/tmp
     server.1=master:2888:3888
     server.2=slave1:2888:3888
     server.3=slave2:2888:3888
@@ -153,12 +370,11 @@ vim zoo.cfg
 
 ..../tmp/myid 文件中保存的数字代表本机的zkServer编号 在此设置master为编号为1的zkServer，之后生成slave1和slave2之后还需要分别修改此文件
 
-
 安装 Hadoop
     修改 ~/.bashrc, 配置 hadoop 环境变量
 
     $ vim ~/.bashrc
-         export HADOOP_HOME=/root/app/hadoop-2.6.0-cdh5.7.0
+         export HADOOP_HOME=/home/wxk/app/hadoop-2.6.0-cdh5.7.0
          export HADOOP_CONFIG_HOME=$HADOOP_HOME/etc/hadoop
          export PATH=$PATH:$HADOOP_HOME/bin
          export PATH=$PATH:$HADOOP_HOME/sbin
@@ -169,11 +385,14 @@ vim zoo.cfg
 
 
 
-配置 hadoop
+## 配置 hadoop
 
 
+
+
+    cd $HADOOP_CONFIG_HOME/
     vim hadoop-env.sh
-export JAVA_HOME=/root/app/jdk1.8.0_231
+export JAVA_HOME=/home/wxk/app/jdk1.8.0_231
 
 进入 `hadoop` 配置文件的目录，因为 `hadoop` 所有的配置都在此目录下
 $ cd $HADOOP_CONFIG_HOME/
@@ -183,12 +402,12 @@ vim core-site.xml
     <configuration>
         <property>
              <name>hadoop.tmp.dir</name>
-             <value>/root/app/hadoop-2.6.0-cdh5.7.0/tmp</value>
+             <value>/home/wxk/app/hadoop-2.6.0-cdh5.7.0/tmp</value>
              <description>A base for other temporary directories.</description>
          </property>
          <property>
              <name>fs.default.name</name>
-             <value>hdfs://master:9000</value>
+             <value>hdfs://master:8020</value>
              <final>true</final>
              <description>The name of the default file system.  A URI whose scheme and authority determine the FileSystem implementation.  The uri's scheme determines the config property (fs.SCHEME.impl) naming the FileSystem implementation class.  The uri's authority is used to determine the host, port, etc. for a filesystem.</description>
           </property>
@@ -208,6 +427,35 @@ vim core-site.xml
     # dfs.journalnode.edits.dir JournalNode存储数据的路径
      
     <configuration>
+     <property>
+    
+        <name>dfs.namenode.name.dir</name>
+    
+        <value>/home/wxk/app/tmp/dfs/name</value>
+    
+     </property>
+
+
+​    
+​    
+     <property>
+    
+        <name>dfs.datanode.data.dir</name>
+    
+        <value>/home/wxk/app/tmp/dfs/data</value>
+    
+     </property>
+    
+     <property>
+    
+        <name>dfs.replication</name>
+    
+        <value>3</value>
+    
+     </property>
+
+
+​    
     <property>
        <name>dfs.nameservices</name>
        <value>ns1</value>
@@ -218,7 +466,7 @@ vim core-site.xml
     </property>
     <property>
        <name>dfs.namenode.rpc-address.ns1.nn1</name>
-       <value>master:9000</value>
+       <value>master:8020</value>
     </property>
     <property>
        <name>dfs.namenode.http-address.ns1.nn1</name>
@@ -226,7 +474,7 @@ vim core-site.xml
     </property>
     <property>
        <name>dfs.namenode.rpc-address.ns1.nn2</name>
-       <value>slave1:9000</value>
+       <value>slave1:8020</value>
     </property>
     <property>
        <name>dfs.namenode.http-address.ns1.nn2</name>
@@ -238,7 +486,7 @@ vim core-site.xml
     </property>
     <property>
        <name>dfs.journalnode.edits.dir</name>
-       <value>/root/app/hadoop-2.6.0-cdh5.7.0/journal</value>
+       <value>/home/wxk/app/hadoop-2.6.0-cdh5.7.0/journal</value>
     </property>
     <property>
        <name>dfs.ha.automatic-failover.enabled</name>
@@ -259,7 +507,7 @@ vim core-site.xml
     </property>
     <property>
        <name>dfs.ha.fencing.ssh.private-key-files</name>
-       <value>/root/.ssh/id_rsa</value>
+       <value>/home/wxk/.ssh/id_rsa</value>
     </property>
     <property>
        <name>dfs.ha.fencing.ssh.connect-timeout</name>
@@ -271,7 +519,7 @@ vim core-site.xml
      </property>
     </configuration>
 
-修改 Yarn 的配置文件vim yarn-site.xml：
+修改 Yarn 的配置文件vim yarn-site.xml
 
     # yarn.resourcemanager.hostname RescourceManager的地址，NodeManager的地址在slaves文件中定义
      
@@ -314,8 +562,7 @@ $ vim slaves
     slave1
     slave2
 
-
-    安装配置 Spark
+## 安装配置 Spark
 
 进入 spark 目录，
 
@@ -323,15 +570,15 @@ $ vim slaves
 修改 ~/.bashrc, 配置 spark 环境变量
 
     $ vim ~/.bashrc
-        export SPARK_HOME=/root/app/spark-2.3.0-bin-2.6.0-cdh5.7.0
-        export PYSPARK_PYTHON=/root/app/python3/bin/python3.6
+        export SPARK_HOME=/home/wxk/app/spark-2.3.0-bin-2.6.0-cdh5.7.0
+        export PYSPARK_PYTHON=/home/wxk/app/python3/bin/python3.6
         export PATH=$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH
        # 保存退出 esc :wq!
     $ source ~/.bashrc #使环境变量生效
 
 修改 spark 配置
 
-    $ cd spark-2.3.0-bin-2.6.0-cdh5.7.0/conf
+    $ cd $SPARK_HOME/conf
     $ cp spark-env.sh.template spark-env.sh
     $ vim spark-env.sh
 
@@ -339,11 +586,11 @@ $ vim slaves
 
      SPARK_MASTER_IP=master
      SPARK_WORKER_MEMORY=128m
-     JAVA_HOME=/root/app/jdk1.8.0_231
-     SCALA_HOME=/root/app/scala-2.11.8  # scala我们后面会安装它
-     SPARK_HOME=/root/app/spark-2.3.0-bin-2.6.0-cdh5.7.0
-     HADOOP_CONF_DIR=/root/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop 
-     SPARK_HISTORY_OPTS="-Dspark.history.fs.logDirectory=hdfs://master:9000/directory"
+     JAVA_HOME=/home/wxk/app/jdk1.8.0_231
+     SCALA_HOME=/home/wxk/app/scala-2.11.8
+     SPARK_HOME=/home/wxk/app/spark-2.3.0-bin-2.6.0-cdh5.7.0
+     HADOOP_CONF_DIR=/home/wxk/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop 
+     SPARK_HISTORY_OPTS="-Dspark.history.fs.logDirectory=hdfs://master:8020/directory"
      SPARK_LIBRARY_PATH=$SPARK_HOME/lib
      SCALA_LIBRARY_PATH=$SPARK_LIBRARY_PATH
      SPARK_WORKER_CORES=1
@@ -366,15 +613,115 @@ $ vim slaves
 
 
 
-
-    安装 SSH, 配置无密码访问集群其它机器
+# 安装 SSH, 配置无密码访问集群其它机器
 
 搭建集群环境，自然少不了使用SSH。这可以实现无密码访问，访问集群机器的时候很方便。
-使用如下命令安装 ssh
 
-apt install ssh 
+> **一、软件安装**
+
+（1）首先更新源（要确定系统可以联网，可以先打开浏览器访问以下百度主页，如果没连上网，可以试试到Win7系统上 “右键计算机 ->  管理 -> 服务和应用程序 -> 服务 -> 找到VMware相关的所有服务 -> 右键 -> 启动”）
+
+```
+sudo apt-get update
+```
+
+（2）安装 openssh
+
+- 服务端安装
+
+```
+sudo apt-get install openssh-server
+```
+
+![1](https://img-blog.csdn.net/20170819150602701?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvd2VueXVuX2thbmc=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+- 客户端安装
+
+```
+sudo apt-get install openssh-client
+```
+
+![2](https://img-blog.csdn.net/20170819151118529?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvd2VueXVuX2thbmc=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+**ps：如何区分该装服务端还是客户端？** 
+ 如果 slave1 系统想要登录 slave2 系统，那么 slave1 装客户端， slave2 装服务端，如果想要互相都能登录，就服务端和客户端都装
+
+（3）测试是否可以登录
+
+```
+ssh -l wxk master
+```
+
+（ssh -l [用户名] [远程ip]） 
+
+
+
+可以查看一下状态：
+
+```
+root@becdadab2db1:/# sudo /etc/init.d/ssh status
+ * sshd is not running12
+```
+
+如果没有就启动一下服务器：
+
+```
+root@becdadab2db1:/# sudo /etc/init.d/ssh start 
+ * Starting OpenBSD Secure Shell server sshd  12
+```
+
+然后在进行：
+
+```
+ssh localhost1
+```
+
+操作就成功了！
+
+> **二、配置免密码登录**
+
+原理是验证公钥而不验证密码
+
+**1、配置本机无密码登录**
+
+（1）进入到宿主目录下，生成本机秘钥同时设置免密登录，**注意，这里不能使用 root 用户生成秘钥，而是要使用你想要设置的用户**
+
+```
+cd ~
+ssh-keygen -t rsa -P ""12
+```
+
+一路回车
+
+![4](https://img-blog.csdn.net/20170819153226138?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvd2VueXVuX2thbmc=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+（2）将公钥追加到 authorized_keys 文件中
+
+```
+cat .ssh/id_rsa.pub >> .ssh/authorized_keys1
+```
+
+赋予 authorized_keys 文件权限
+
+```
+chmod 600 .ssh/authorized_keys1
+```
+
+![5](https://img-blog.csdn.net/20170819153854253?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvd2VueXVuX2thbmc=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+（3）验证是否成功
+
+```
+ssh localhost1
+```
+
+![6](https://img-blog.csdn.net/20170819153907656?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvd2VueXVuX2thbmc=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+
 
 SSH装好了以后，由于我们是 Docker 容器中运行，所以 SSH 服务不会自动启动。需要我们在容器启动以后，手动通过/usr/sbin/sshd 手动打开SSH服务。未免有些麻烦，为了方便，我们把这个命令加入到~/.bashrc文件中。通过vim ~/.bashrc编辑.bashrc文件,
+
+
 
 vim ~/.bashrc
 
@@ -387,19 +734,16 @@ vim ~/.bashrc
 
 $ source ~/.bashrc
 
-此过程可能会报错:
+
+
+
+
+再次进入容器过程可能会报错:
 Missing privilege separation directory: /run/sshd 需要自己创建这个目录
 
 $ mkdir /run/sshd
 
 /usr/sbin/sshd
-
-生成访问密钥
-
-    $ cd ~/
-    $ ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa
-    $ cd .ssh
-    $ cat id_rsa.pub >> authorized_keys
 
 注意： 这里，我的思路是直接将密钥生成后写入镜像，免得在买个容器里面再单独生成一次，还要相互拷贝公钥，比较麻烦。当然这只是学习使用，实际操作时，应该不会这么搞，因为这样所有容器的密钥都是一样的！！！
 
@@ -421,7 +765,7 @@ $docker commit -m "zookeeper hadoop pyspark scala python java install" 容器ID 
 
 
 
-五、启动集群
+# 启动集群
 
 首先我们对三个终端进行分别验证IP规则，在此之前需要关闭docker中所有正在运行的容器：
 
@@ -442,16 +786,16 @@ $docker commit -m "zookeeper hadoop pyspark scala python java install" 容器ID 
 
  
 
-编写集群节点启动脚本
+##  编写集群节点启动脚本
 启动 ubuntu:spark
 
 $ docker run -ti ubuntu:spark
 
-进入 /root/soft 目录，我们将启动脚本都放这里吧
+这里记得切换到自己的用户
 
-    $ cd /root/soft
-    $ mkdir shell
-    $ cd shell
+进入 /wxk/sc 目录，我们将启动脚本都放这里吧
+
+    $ cd ~/script
 
 vim run_master.sh 创建 Master 节点的运行脚本
 
@@ -469,7 +813,7 @@ echo 172.17.0.3 slave1 >> /etc/hosts
 echo 172.17.0.4 slave2 >> /etc/hosts
 
 #配置 master 节点的 zookeeper 的 server id
-echo 1 > /root/app/zookeeper-3.4.9/tmp/myid
+echo 1 > /home/wxk/app/zookeeper-3.4.9/tmp/myid
 
 zkServer.sh start
 
@@ -480,6 +824,11 @@ hdfs zkfc -formatZK
 start-dfs.sh
 start-yarn.sh
 start-all.sh
+
+hadoop fs -mkdir /directory
+$SPARK_HOME/sbin/start-history-server.sh
+
+
 
 
 ​     
@@ -500,7 +849,7 @@ echo 172.17.0.3 slave1 >> /etc/hosts
 echo 172.17.0.4 slave2 >> /etc/hosts
      
 #配置 master 节点的 zookeeper 的 server id
-echo 2 > /root/app/zookeeper-3.4.9/tmp/myid
+echo 2 > /home/wxk/app/zookeeper-3.4.9/tmp/myid
      
 zkServer.sh start
 
@@ -522,7 +871,7 @@ echo 172.17.0.3 slave1 >> /etc/hosts
 echo 172.17.0.4 slave2 >> /etc/hosts
      
 #配置 master 节点的 zookeeper 的 server id
-echo 3 > /root/app/zookeeper-3.4.9/tmp/myid
+echo 3 > /home/wxk/app/zookeeper-3.4.9/tmp/myid
      
 zkServer.sh start
 
@@ -541,6 +890,10 @@ stop-dfs.sh
 stop-yarn.sh
 stop-all.sh
 
+$SPARK_HOME/sbin/stop-history-server.sh
+
+
+
 各节点运行脚本到此编写完成。
 
     最后
@@ -558,11 +911,13 @@ $ exit
 
 $ docker commit -m "zookeeper hadoop spark scala install" 容器ID ubuntu:spark
 
-    配置虚拟机 ubuntu 的 hosts
+    配置主机 ubuntu 的 hosts
 
 $ sudo vim /etc/hosts
 
-注意：添加如下hosts，不然远程访问肯定会出错的
+注意：添加如下hosts，不然远程访问肯定会出错的,
+
+这里假如是用普通用户，那在容器里也要修改hosts如下并保存镜像
 
 172.17.0.1      host
 172.17.0.2      master
@@ -581,21 +936,21 @@ $ sudo vim /etc/hosts
 
 
     $  docker run --privileged -itd --name=master -h master ubuntu:spark /usr/sbin/init 
-    $ ./root/app/shell/run_master.sh
+    $ ./home/wxk/script/run_master.sh
 
 启动slave1：
 
     启动 Slave1 节点
     $ docker run --privileged -itd --name=slave1 -h slave1 ubuntu:spark /usr/sbin/init
     运行 run_slave1.sh 启动脚本
-    $ ./root/app/shell/run_slave1.sh
+    $ ./home/wxk/script/run_slave1.sh
 
 启动slave2：
 
     启动 Slave2 节点
     $ docker run --privileged -itd --name=slave2 -h slave2 ubuntu:spark /usr/sbin/init
     运行 run_slave2.sh 启动脚本
-    $ ./root/app/shell/run_slave2.sh
+    $ ./home/wxk/script/run_slave2.sh
 
 切换到master终端：(在这之前先 ssh master   ssh slave1   ssh slave2   不然会链接失败)
 
@@ -620,9 +975,19 @@ root@master:start-dfs.sh
 
 备用选项------------------------------  )
 
-启动 Spark 集群
+# 启动 Spark 集群
+
+*** 这里应为是在普通用户wxk下运行脚本，所以无法修改host，需要在执行脚本之前先分别修改三个节点的hosts文件为***
+
+172.17.0.1      host
+172.17.0.2      master
+172.17.0.3      slave1
+172.17.0.4      slave2
+
+
 
     启动 Master 节点
+    
     
     $ docker run --privileged -itd --name=master -h master ubuntu:spark /usr/sbin/init 
     
@@ -634,7 +999,7 @@ root@master:start-dfs.sh
     
     运行 run_slave1.sh 启动脚本
     
-    $ ./root/app/shell/run_slave1.sh
+    $ ./home/wxk/script/run_slave1.sh
     
     启动 Slave2 节点
     
@@ -642,13 +1007,13 @@ root@master:start-dfs.sh
     
     运行 run_slave2.sh 启动脚本
     
-    $ ./root/app/shell/run_slave2.sh
+    $ ./home/wxk/script/run_slave2.sh
     
     最后再运行 Master 节点的启动脚本 run_master.sh
     
     切换到启动了 Master 节点的 Docker 终端
     
-    $ ./root/app/shell/run_master.sh
+    $ ./home/wxk/script/run_master.sh
     
     可以使用 jps 命令查看当前集群运行情况
     
@@ -674,22 +1039,19 @@ root@master:start-dfs.sh
          Yarn      master:8088
          Spark    master:8080
 
-
-Spark Core调优
-一、优化之HistoryServer配置及使用
+# Spark Core调优
+## 一、优化之HistoryServer配置及使用
 参考网址
-spark-submit --master local[2] --name spark0301 /root/app/script/spark0301.py 
-
+spark-submit --master local[2] --name spark0301 /home/wxk/app/script/spark0301.py 
 
 •设置
  cd $SPARK_HOME/conf
 vi spark-defaults.conf
  spark.eventLog.enabled           true                                
-spark.eventLog.dir               hdfs://master:9000/directory 
-
+spark.eventLog.dir               hdfs://master:8020/directory 
 
  vi spark-env.sh
- SPARK_HISTORY_OPTS="-Dspark.history.fs.logDirectory=hdfs://master:9000/directory "
+ SPARK_HISTORY_OPTS="-Dspark.history.fs.logDirectory=hdfs://master:8020/directory "
 
 
  hadoop fs -mkdir /directory(后续集成进run_master脚本)
@@ -702,9 +1064,9 @@ spark.eventLog.dir               hdfs://master:9000/directory
 
 
 •测试
-spark-submit --master local[2] --name spark0301 /root/app/script/spark0301.py 
+spark-submit --master local[2] --name spark0301 /home/wxk/app/script/spark0301.py 
 
-./spark-submit --master yarn --name spark-yarn /root/app/script/spark0402.py hdfs://master:9000/hello.txt hdfs://master:9000/wc/output
+./spark-submit --master yarn --name spark-yarn /home/wxk/app/script/spark0402.py hdfs://master:8020/hello.txt hdfs://master:8020/wc/output
 
 
 
@@ -720,7 +1082,7 @@ find /usr/lib -name "libffi.so*"
 
 接下来就是创建软连接：
 
- ln -s /usr/lib/x86_64-linux-gnu/libffi.so.7 /usr/lib/x86_64-linux-gnu/libffi.so.6
+ sudo ln -s /usr/lib/x86_64-linux-gnu/libffi.so.7 /usr/lib/x86_64-linux-gnu/libffi.so.6
 
 
 
@@ -749,7 +1111,7 @@ one.py
 
 如果没有报错，那就说明没问题了，在Utilities中就能看得到我们上传的文件
 
-七、遇到的问题以及解决方法
+docker run --privileged -itd --name=master -h master ubuntu:spark /usr/sbin/init七、遇到的问题以及解决方法
 
 问题一：两台namenode都是Standby状态，此状态是不能够被远程访问上传文件的，节点必须处于active状态。
 
@@ -818,6 +1180,10 @@ Operation failed: End of File Exception between local host is: "master/172.17.0.
 
 
 
+
+
+
+
 ## yarn运行模式详解
 
 [网址](http://spark.apache.org/docs/latest/running-on-yarn.html)
@@ -832,7 +1198,7 @@ yarn
 		standalone：你的spark集群上每个节点都需要部署spark，然后需要启动spark集群（需要master和worker）
 
 
-./spark-submit --master yarn --name spark-yarn /root/app/script/spark0402.py hdfs://master:9000/hello.txt hdfs://master:9000/wc/output
+./spark-submit --master yarn --name spark-yarn /home/wxk/app/script/spark0402.py hdfs://master:8020/hello.txt hdfs://master:8020/wc/output
 
 When running with master 'yarn' either HADOOP_CONF_DIR or YARN_CONF_DIR must be set in the environment
 
@@ -873,7 +1239,7 @@ vi spark-env.sh
 
 ```
 JAVA_HOME=/home/wxk/app/jdk1.8.0_152                           
-HADOOP_CONF_DIR=/root/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop 
+HADOOP_CONF_DIR=/home/wxk/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop 
 ```
 
 ![1570353192251](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1570353192251.png)
@@ -883,7 +1249,7 @@ HADOOP_CONF_DIR=/root/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop
 + 提交
 
   ```
-  spark-submit --master yarn --name spark-yarn /root/app/script/spark0402.py hdfs://master:9000/hello.txt hdfs://master:9000/wc/output
+  spark-submit --master yarn --name spark-yarn /home/wxk/app/script/spark0402.py hdfs://master:8020/hello.txt hdfs://master:8020/wc/output
   ```
 
   
@@ -894,7 +1260,7 @@ HADOOP_CONF_DIR=/root/app/hadoop-2.6.0-cdh5.7.0/etc/hadoop
 # SparkSQL测试
 
 ```SPARQL
-df = spark.read.json("file:///root/app/spark-2.3.0-bin-2.6.0-cdh5.7.0/examples/src/main/resources/people.json")
+df = spark.read.json("file:///home/wxk/app/spark-2.3.0-bin-2.6.0-cdh5.7.0/examples/src/main/resources/people.json")
 
 df.show()
 ```
@@ -965,14 +1331,14 @@ Azkaban环境搭建
 
 
 ```
-cd /root/app/azkaban-3.43.0
+cd /home/wxk/app/azkaban-3.43.0
 ```
 
 ```
-cd /root/app/azkaban-3.43.0/azkaban-solo-server-0.1.0-SNAPSHOT/conf
+cd /home/wxk/app/azkaban-3.43.0/azkaban-solo-server-0.1.0-SNAPSHOT/conf
 vim azkaban-users.xml (在里面可以增加账户)
 
-cd /root/app/azkaban-solo-server-0.1.0-SNAPSHOT
+cd /home/wxk/app/azkaban-solo-server-0.1.0-SNAPSHOT
 ```
 
 ```
@@ -1024,7 +1390,7 @@ vi azkaban.properties
 jps
 ```
 
-![1570974851274](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1570974851274.png)
+![](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1570974851274.png)
 
 ```
 UI:http://192.168.1.18:8081/
@@ -1425,10 +1791,10 @@ sudo systemctl status mariadb
 ...
 ```
 
-假如没在运行：
+....................假如没在运行：
 
-systemctl start mariadb
-systemctl enable mariadb
+sudo systemctl start mariadb
+sudo systemctl enable mariadb
 
 ## 三、维护 MariaDB
 
@@ -1542,7 +1908,7 @@ flush privileges;
 + Create the Azkaban Tables 
 
   ```
-  cd /root/app/azkaban-3.43.0/azkaban-db-0.1.0-SNAPSHOT
+  cd /home/wxk/app/azkaban-3.43.0/azkaban-db-0.1.0-SNAPSHOT
   ll
   ```
 
@@ -1555,7 +1921,7 @@ flush privileges;
   
   ```
 
-source /root/app/azkaban-3.43.0/azkaban-db-0.1.0-SNAPSHOT/create-all-sql-0.1.0-SNAPSHOT.sql
+source /home/wxk/app/azkaban-3.43.0/azkaban-db-0.1.0-SNAPSHOT/create-all-sql-0.1.0-SNAPSHOT.sql
 
 
 
@@ -1598,10 +1964,10 @@ mysql.password=azkaban
 jetty.use.ssl=true
 jetty.ssl.port=8443
 mysql.numconnections=100
-jetty.keystore=/root/app/keystore #keytool生成的keystore路径
+jetty.keystore=/home/wxk/app/keystore #keytool生成的keystore路径
 jetty.password=123456 #keytool中设置的密码
 jetty.keypassword=123456
-jetty.truststore=/root/app/keystore
+jetty.truststore=/home/wxk/app/keystore
 jetty.trustpassword=123456
 
 ```
@@ -1678,7 +2044,7 @@ tar -zxvf elasticsearch-6.3.0-linux-x86_64.tar.gz -C ~/app/
 
 ```
 vim ~/app/elasticsearch-6.3.0/config/elasticsearch.yml
-cd /root/app/elasticsearch-6.3.0/bin
+cd /home/wxk/app/elasticsearch-6.3.0/bin
 ```
 
 
@@ -1695,9 +2061,6 @@ network.host: 0.0.0.0
 
 
 ```
-chown -R root:root elasticsearch-6.3.0/
-chmod 770 elasticsearch-6.3.0/
-cd bin
 ./elasticsearch
 
 elasticsearch错误指南：https://blog.csdn.net/u013641234/article/details/80792416
@@ -1792,7 +2155,7 @@ tar -zxvf kibana-5.2.2-linux-x86_64.tar.gz -C ~/app/
 ```
 
 ```
-cd config/
+cd ~/app/kibana-6.3.0-linux-x86_64/config/
 ```
 
 ```
@@ -1808,13 +2171,14 @@ elasticsearch.url: "http://master:9200"
 启动
 
 ```
-bin/kibana
+~/app/kibana-6.3.0-linux-x86_64/bin/kibana
+
 ```
 
 ui界面
 
 ```
-http://192.168.1.18:5601
+http://master:5601
 ```
 
 ![image-20191102231557919](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191102231557919.png)
