@@ -1296,6 +1296,8 @@ Operation failed: End of File Exception between local host is: "master/172.17.0.
 
 
 
+
+
 ## yarn运行模式详解
 
 [网址](http://spark.apache.org/docs/latest/running-on-yarn.html)
@@ -1816,7 +1818,9 @@ nodes:
 
 ![1571140449340](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571140449340.png)
 
-![1571140528715](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571140528715.png)
+![1571140528715](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571140528715.png)n_master.sh  spark0402.py  sparkyarn.py
+dependencies.zip  run_sln_master.sh  spark0402.py  sparkyarn.py
+dependencies.zip  run_sl
 
 ![1571140564369](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/1571140564369.png)
 
@@ -2296,4 +2300,295 @@ http://master:5601
 ![image-20191102231645176](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191102231645176.png)
 
 ![image-20191102231732808](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191102231732808.png)
+
+
+
+
+
+---
+
+## 甲、 将作业运行到YARN上 
+
+把csv文件上传至hdfs
+
+```
+hadoop fs -ls /
+hadoop fs -mkdir -p /data/
+hadoop fs -put Beijing* /data/
+hadoop fs -ls /data/
+```
+
+![image-20191103093236106](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103093236106.png)
+
+--sparkyarn.py
+
+```python
+# !/usr/bin/env python
+# encoding: utf-8
+import sys
+import codecs
+sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
+
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+from pyspark.sql.functions import udf 
+ 
+ 
+def get_grade(value):
+    if value <= 50 and value >= 0:
+        return "健康"
+    elif value <= 100:
+        return "中等"
+    elif value <= 150:
+        return "对敏感人群不健康"
+    elif value <= 200:
+        return "不健康"
+    elif value <= 300:
+        return "非常不健康"
+    elif value <= 500:
+        return "危险"
+    elif value > 500:
+        return "爆表"
+    else:
+        return None
+if __name__ == '__main__':
+    spark = SparkSession.builder.appName("project").getOrCreate()
+ 
+ 
+    # 读取hdfs上的数据
+    data2017 = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2017_HourlyPM25_created20170803.csv").select("Year","Month","Day","Hour","Value","QC Name")
+    data2016 = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2016_HourlyPM25_created20170201.csv").select("Year","Month","Day","Hour","Value","QC Name")
+    data2015 = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2015_HourlyPM25_created20160201.csv").select("Year","Month","Day","Hour","Value","QC Name")
+ 
+    # udf 转换
+    # UDF的全称为user-defined function，用户定义函数
+    grade_function_udf = udf(get_grade,StringType())
+ 
+    # 进来一个Value，出去一个Grade
+    # 添加列
+    group2017 = data2017.withColumn("Grade",grade_function_udf(data2017['Value'])).groupBy("Grade").count()
+    group2016 = data2016.withColumn("Grade",grade_function_udf(data2016['Value'])).groupBy("Grade").count()
+    group2015 = data2015.withColumn("Grade",grade_function_udf(data2015['Value'])).groupBy("Grade").count()
+ 
+    group2015.select("Grade", "count", group2015['count'] / data2015.count()).show()
+    group2016.select("Grade", "count", group2016['count'] / data2016.count()).show()
+    group2017.select("Grade", "count", group2017['count'] / data2017.count()).show()
+ 
+ 
+    spark.stop()  
+```
+
+将sparkyarn.py上传至服务器
+
+![image-20191103093738640](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103093738640.png)
+
++ 启动yarn
+
+![image-20191103093935489](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103093935489.png)
+
+```
+http://master:8088
+```
+
+![image-20191103094024797](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103094024797.png)
+
+----
+
+```
+spark-submit --master yarn ~/script/sparkyarn.py
+```
+
+> 报错：UnicodeEncodeError: 'ascii' codec can't encode characters in position 162-167: ordinal not in range(
+
+==修正==
+
+```
+# 添加
+import sys
+import codecs
+sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
+```
+
+![image-20191103095152903](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103095152903.png)
+
+## 乙、 统计分析结果写入ES测试 
+
+使用SparkSQL将统计结果写入到ES中去
+
+需要一个jar包,  [elasticsearch-spark-20_2.11](https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch-spark-20_2.11) » 6.3.0 
+
+==可以去maven仓库中下载==
+
+![image-20191103100355176](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103100355176.png)
+
+```
+cd lib/
+wget https://repo1.maven.org/maven2/org/elasticsearch/elasticsearch-spark-20_2.11/6.3.0/elasticsearch-spark-20_2.11-6.3.0.jar
+```
+
+```
+pyspark --master local[2] --jars ~/lib/elasticsearch-spark-20_2.11-6.3.0.jar
+```
+
+![image-20191103101835348](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103101835348.png)
+
+```python
+from pyspark.sql.types import *
+from pyspark.sql.functions import udf
+
+
+def get_grade(value):
+    if value <= 50 and value >= 0:
+        return "健康"
+    elif value <= 100:
+        return "中等"
+    elif value <= 150:
+        return "对敏感人群不健康"
+    elif value <= 200:
+        return "不健康"
+    elif value <= 300:
+        return "非常不健康"
+    elif value <= 500:
+        return "危险"
+    elif value > 500:
+        return "爆表"
+    else:
+        return None
+
+data2017 = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2017_HourlyPM25_created20170803.csv").select("Year","Month","Day","Hour","Value","QC Name")
+grade_function_udf = udf(get_grade,StringType())
+group2017 = data2017.withColumn("Grade",grade_function_udf(data2017['Value'])).groupBy("Grade").count()
+result2017 = group2017.select("Grade", "count", group2017['count'] / data2017.count())
+```
+
+![image-20191103102120805](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103102120805.png)
+
+```
+result2017.show()
+```
+
+![image-20191103102601497](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103102601497.png)
+
+```
+result2017.printSchema()
+```
+
+![image-20191103103117871](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103103117871.png)
+
+```
+result2017.write.format("org.elasticsearch.spark.sql").option("es.nodes","master:9200").mode("overwrite").save("weaes/weather")
+```
+
+----
+
+
+
+```
+result2017_2=group2017.select("Grade", "count").withColumn("precent",group2017['count'] / data2017.count()*100)
+```
+
+```
+result2017_2.selectExpr("Grade as grade", "count", "precent").write.format("org.elasticsearch.spark.sql").option("es.nodes","master:9200").mode("overwrite").save("weaes/weather")
+```
+
+---
+
+--wea.py
+
+```python
+
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+from pyspark.sql.functions import udf
+
+
+def get_grade(value):
+    if value <= 50 and value >= 0:
+        return "健康"
+    elif value <= 100:
+        return "中等"
+    elif value <= 150:
+        return "对敏感人群不健康"
+    elif value <= 200:
+        return "不健康"
+    elif value <= 300:
+        return "非常不健康"
+    elif value <= 500:
+        return "危险"
+    elif value > 500:
+        return "爆表"
+    else:
+        return None
+
+if __name__ == '__main__':
+    spark = SparkSession.builder.appName("project").getOrCreate()
+
+
+    # 读取hdfs上的数据
+    data2017 = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2017_HourlyPM25_created20170803.csv").select("Year","Month","Day","Hour","Value","QC Name")
+    data2016 = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2016_HourlyPM25_created20170201.csv").select("Year","Month","Day","Hour","Value","QC Name")
+    data2015 = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2015_HourlyPM25_created20160201.csv").select("Year","Month","Day","Hour","Value","QC Name")
+
+    # udf 转换
+    # UDF的全称为user-defined function，用户定义函数
+    grade_function_udf = udf(get_grade,StringType())
+
+    # 进来一个Value，出去一个Grade
+    # 添加列
+    group2017 = data2017.withColumn("Grade",grade_function_udf(data2017['Value'])).groupBy("Grade").count()
+    group2016 = data2016.withColumn("Grade",grade_function_udf(data2016['Value'])).groupBy("Grade").count()
+    group2015 = data2015.withColumn("Grade",grade_function_udf(data2015['Value'])).groupBy("Grade").count()
+
+    result2017 = group2017.select("Grade", "count").withColumn("precent", group2017['count'] / data2017.count() * 100)
+    result2016 = group2016.select("Grade", "count").withColumn("precent", group2016['count'] / data2016.count() * 100)
+    result2015 = group2015.select("Grade", "count").withColumn("precent", group2015['count'] / data2015.count() * 100)
+
+    result2017.selectExpr("Grade as grade", "count", "precent").write.format("org.elasticsearch.spark.sql").option(
+        "es.nodes", "master:9200").mode("overwrite").save("weather2017/pm")
+    result2016.selectExpr("Grade as grade", "count", "precent").write.format("org.elasticsearch.spark.sql").option(
+        "es.nodes", "master:9200").mode("overwrite").save("weather2016/pm")
+    result2015.selectExpr("Grade as grade", "count", "precent").write.format("org.elasticsearch.spark.sql").option(
+        "es.nodes", "master:9200").mode("overwrite").save("weather2015/pm")
+
+    spark.stop()
+```
+
+```
+spark-submit --master local[2] --jars ~/lib/elasticsearch-spark-20_2.11-6.3.0.jar ~/script/wea.py
+```
+
+![image-20191103124317254](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103124317254.png)
+
+## 丙、 Kibana图形化展示 
+
+![image-20191103124434935](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103124434935.png)
+
+![image-20191103124504224](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103124504224.png)
+
+![image-20191103124538187](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103124538187.png)
+
+![image-20191103124618031](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103124618031.png)
+
+![image-20191103125036841](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103125036841.png)
+
+![image-20191103125152626](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103125152626.png)
+
+```
+# 删除es中不想要的数据
+curl -XDELETE 'http://master:9200/weaes'
+```
+
+![image-20191103125843078](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103125843078.png)
+
+![image-20191103125857802](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103125857802.png)
+
+![image-20191103130553492](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103130553492.png)
+
+![image-20191103130708829](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103130708829.png)
+
+![image-20191103130721959](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103130721959.png)
+
+==保存==
+
+![image-20191103130957700](/home/wxk/PycharmProjects/wxk_pySpark/WXK笔记总结/picture/image-20191103130957700.png)
 
