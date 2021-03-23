@@ -2225,6 +2225,25 @@ ES_JAVA_OPTS="-Des.insecure.allow.root=true"
 
 
 
+elasticsearch 启动报
+
+max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
+
+ 
+
+在/etc/sysctl.conf文件最后添加一行
+
+vm.max_map_count=262144
+
+执行/sbin/sysctl -p 立即生效
+
+之后再起启动就好了
+
+
+
+
+
+
 创建索引库
 
 ```
