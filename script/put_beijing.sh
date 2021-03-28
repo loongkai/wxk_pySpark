@@ -1,0 +1,1 @@
+hadoop fs -put -f /home/wxk/data/Beijing_* /data/

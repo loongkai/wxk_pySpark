@@ -25,9 +25,12 @@ def get_grade(value):
 if __name__ == '__main__':
     spark = SparkSession.builder.appName("project").getOrCreate()
 
-    data2017 = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2017_HourlyPM25_created20170803.csv").select("Year","Month","Day","Hour","Value","QC Name")
-    data2016 = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2016_HourlyPM25_created20170201.csv").select("Year","Month","Day","Hour","Value","QC Name")
-    data2015 = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2015_HourlyPM25_created20160201.csv").select("Year","Month","Day","Hour","Value","QC Name")
+    data2017a = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2017_HourlyPM25_created20170803.csv").select("Year","Month","Day","Hour","Value","QC Name")
+    data2017 = data2017a.filter(data2017a['QC Name']=="Valid")
+    data2016a = spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2016_HourlyPM25_created20170201.csv").select("Year","Month","Day","Hour","Value","QC Name")
+    data2016 = data2016a.filter(data2016a['QC Name']=="Valid")    
+    data2015a= spark.read.format("csv").option("header","true").option("inferSchema","true").load("/data/Beijing_2015_HourlyPM25_created20160201.csv").select("Year","Month","Day","Hour","Value","QC Name")
+    data2015 = data2015a.filter(data2015a['QC Name']=="Valid") 
 
     grade_function_udf = udf(get_grade, StringType())
 
@@ -39,8 +42,8 @@ if __name__ == '__main__':
     result2016 = group2016.select("Grade", "count").withColumn("precent",group2016['count'] / data2016.count()*100)
     result2015 = group2015.select("Grade", "count").withColumn("precent",group2015['count'] / data2015.count()*100)
 
-    result2017.selectExpr("Grade as grade", "count", "precent").write.format("org.elasticsearch.spark.sql").option("es.nodes","192.168.199.102:9200").mode("overwrite").save("weather2017/pm")
-    result2016.selectExpr("Grade as grade", "count", "precent").write.format("org.elasticsearch.spark.sql").option("es.nodes","192.168.199.102:9200").mode("overwrite").save("weather2016/pm")
-    result2015.selectExpr("Grade as grade", "count", "precent").write.format("org.elasticsearch.spark.sql").option("es.nodes","192.168.199.102:9200").mode("overwrite").save("weather2015/pm")
+    result2017.selectExpr("Grade as grade", "count", "precent").write.format("org.elasticsearch.spark.sql").option("es.nodes","master:9200").mode("overwrite").save("beijing2017/pm")
+    result2016.selectExpr("Grade as grade", "count", "precent").write.format("org.elasticsearch.spark.sql").option("es.nodes","master:9200").mode("overwrite").save("beijing2016/pm")
+    result2015.selectExpr("Grade as grade", "count", "precent").write.format("org.elasticsearch.spark.sql").option("es.nodes","master:9200").mode("overwrite").save("beijing2015/pm")
 
     spark.stop()

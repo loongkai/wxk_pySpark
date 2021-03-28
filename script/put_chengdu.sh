@@ -1,0 +1,1 @@
+hadoop fs -put -f /home/wxk/data/Chengdu_* /data/

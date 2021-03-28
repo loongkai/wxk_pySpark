@@ -1,0 +1,2 @@
+type=command
+command=sh ./put_beijing.sh
